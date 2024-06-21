@@ -45,7 +45,7 @@ function prepare_nustar(data_path, obsid, fpm)
 end
 
 nustar_data = []
-for obsid in ["60001047002"]
+for obsid in ["60001047002", "60001047003", "60001047005"]
     for fpm in ["A", "B"]
         push!(nustar_data, prepare_nustar(data_path, obsid, fpm))
     end
@@ -55,9 +55,14 @@ end
 
 model = PowerLaw()
 prob = FittingProblem(
-    FittableMultiModel(model, model, model, model, model),
-    FittableMultiDataset(xmm_data[1], xmm_data[2], xmm_data[3], nustar_data[1], nustar_data[2])
+    FittableMultiModel(model, model, model, model, model, model, model, model, model),
+    FittableMultiDataset(xmm_data[1], xmm_data[2], xmm_data[3], nustar_data[1], nustar_data[2], nustar_data[3], nustar_data[4], nustar_data[5], nustar_data[6])
 )
+
+bind!(prob, :a)
+# TODO: figure out how to do the bindings properly
+# bind!(prob, 4 => :K, 5 => :K)
+
 result = fit(prob, LevenbergMarquadt())
 
 # Plot
@@ -67,3 +72,7 @@ plotresult!(xmm_data[2], result[2], xscale=:log10, yscale=:log10, xlims=(3, 10),
 plotresult!(xmm_data[3], result[3], xscale=:log10, yscale=:log10, xlims=(3, 10), ylims=(5e-2, 2))
 plotresult!(nustar_data[1], result[4], xscale=:log10, yscale=:log10, xlims=(3,50), ylims=(1e-4,2))
 plotresult!(nustar_data[2], result[5], xscale=:log10, yscale=:log10, xlims=(3,50), ylims=(1e-4,2))
+plotresult!(nustar_data[3], result[6], xscale=:log10, yscale=:log10, xlims=(3,50), ylims=(1e-4,2))
+plotresult!(nustar_data[4], result[7], xscale=:log10, yscale=:log10, xlims=(3,50), ylims=(1e-4,2))
+plotresult!(nustar_data[5], result[8], xscale=:log10, yscale=:log10, xlims=(3,50), ylims=(1e-4,2))
+plotresult!(nustar_data[6], result[9], xscale=:log10, yscale=:log10, xlims=(3,50), ylims=(1e-4,2))
