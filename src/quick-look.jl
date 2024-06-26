@@ -79,14 +79,18 @@ end
 
 
 # Fit
+lp_model = LineProfile(
+    x -> x^-3,
+    table;
+    E₀ = FitParam(6.4),
+    a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+    # speed up model evaluation about 3 times
+    quadrature_points = 13,
+    n_radii = 700,
+)
 
-model =
-    PowerLaw() + LineProfile(
-        x -> x^-3,
-        table;
-        E₀ = FitParam(6.4),
-        a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
-    )
+# use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
+model = PowerLaw() + AutoCache(lp_model)
 domain = collect(range(1, 10, 200))
 output = invokemodel(domain, model)
 
@@ -99,6 +103,8 @@ model.E₀_1.frozen = true
 
 model
 
+# make sure the datasets from the same observatory are grouped together
+# else the AutoCache will trigger re-eval as the domain has changed, even through the model parameters will all be the same
 datasets = FittableMultiDataset(
     xmm_data[1],
     xmm_data[2],
@@ -110,100 +116,32 @@ datasets = FittableMultiDataset(
     nustar_data[5],
     nustar_data[6],
 )
-datasets = FittableMultiDataset(xmm_data[1], xmm_data[2], xmm_data[3])
+models = FittableMultiModel((model for _ in datasets.d)...)
 
-prob = FittingProblem(model => xmm_data[3])
+prob = FittingProblem(models, datasets)
 
-# bind!(prob, :a_2)
-# bind!(prob, :a_1)
-# bind!(prob, :θ_1)
-# bind!(prob, :rout_1)
-# bind!(prob, :E₀_1)
+bind!(prob, :a_2)
+bind!(prob, :a_1)
+bind!(prob, :θ_1)
 # TODO: figure out how to do the bindings properly
 # bind!(prob, 4 => :K, 5 => :K)
 
-result = fit!(prob, LevenbergMarquadt(); verbose = true, autodiff = :finite)
-model
+result = @time fit(prob, LevenbergMarquadt(); verbose = true)
+# looking to improve on
+#  78.044531 seconds (9.23 M allocations: 1.073 GiB, 0.23% gc time, 28.93% compilation time)
+#  55.780932 seconds (38.87 k allocations: 513.027 MiB, 0.24% gc time)
 
-# Plot
-plotresult(
-    xmm_data[3],
-    result[1],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 10),
-    ylims = (5e-2, 2),
-)
-
-plotresult(
-    xmm_data[1],
-    result[1],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 10),
-    ylims = (5e-2, 2),
-)
-plotresult!(
-    xmm_data[2],
-    result[2],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 10),
-    ylims = (5e-2, 2),
-)
-plotresult!(
-    xmm_data[3],
-    result[3],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 10),
-    ylims = (5e-2, 2),
-)
-plotresult!(
-    nustar_data[1],
-    result[4],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 50),
-    ylims = (1e-4, 2),
-)
-plotresult!(
-    nustar_data[2],
-    result[5],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 50),
-    ylims = (1e-4, 2),
-)
-plotresult!(
-    nustar_data[3],
-    result[6],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 50),
-    ylims = (1e-4, 2),
-)
-plotresult!(
-    nustar_data[4],
-    result[7],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 50),
-    ylims = (1e-4, 2),
-)
-plotresult!(
-    nustar_data[5],
-    result[8],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 50),
-    ylims = (1e-4, 2),
-)
-plotresult!(
-    nustar_data[6],
-    result[9],
-    xscale = :log10,
-    yscale = :log10,
-    xlims = (3, 50),
-    ylims = (1e-4, 2),
-)
+begin
+    p = plotresult(
+        datasets.d[1],
+        result[1],
+        xscale = :log10,
+        yscale = :log10,
+        xlims = (3, 10),
+        ylims = (5e-2, 2),
+    )
+    for i = 2:lastindex(datasets.d)
+        plotresult!(datasets.d[i], result[i])
+    end
+    plot(p, legend = false)
+end
