@@ -7,6 +7,9 @@ using GradusSpectralModels
 using JLD2
 # for JLD2 compression
 using CodecZlib
+# using OptimizationOptimJL
+
+include("additional-models.jl")
 
 function read_or_make_transfer_table(path; new = false)
     if isfile(path) && !new
@@ -33,12 +36,36 @@ function read_or_make_transfer_table(path; new = false)
 end
 
 data_path = "data"
-TRANSFER_FUNCTION_PATH = joinpath(data_path, "transfer_function_table.jld2")
+# TRANSFER_FUNCTION_PATH = joinpath(data_path, "transfer_function_table.jld2")
+TRANSFER_FUNCTION_PATH = joinpath(data_path, "thin-disc-transfer-table-900.jld2")
+TRANSFER_FUNCTION_PATH = joinpath(data_path, "thick-disc-transfer-table-new.jld2")
+
+LAMP_POST_PROFILE_PATH = joinpath(data_path, "lamp-post-profile.jld2")
 
 table = read_or_make_transfer_table(TRANSFER_FUNCTION_PATH);
+for grid in table.grids
+    replace!(grid.lower_f, NaN => 0.0)
+    replace!(grid.upper_f, NaN => 0.0)
+end
+
+# emissivity profile table
+a_range = collect(range(0.0, 0.998, 10))
+h_range = collect(range(1.0, 10.0, 10))
+η_range = collect(range(0.01, 0.3, 10))
+
+prof_wrap = if isfile(LAMP_POST_PROFILE_PATH)
+    f = jldopen(LAMP_POST_PROFILE_PATH, "r")
+    prof = f["lamp_post"]
+    close(f)
+    prof
+else
+    prof_wrap = @time tabulate_emissivity_profile(a_range, h_range, η_range)
+    jldopen(LAMP_POST_PROFILE_PATH, "w"; compress = true) do f
+        f["lamp_post"] = prof_wrap
+    end
+end
 
 # XMM data
-
 function prepare_xmm(spec, back, rmf, arf)
     ds = XmmData(XmmEPIC(), spec, background = back, response = rmf, ancillary = arf)
     regroup!(ds)
@@ -77,16 +104,46 @@ for obsid in ["60001047002", "60001047003", "60001047005"]
     end
 end
 
-
 # Fit
-lp_model = LineProfile(
-    x -> x^-3,
+# lp_model = LampPostLineProfile(
+#     prof_wrap,
+#     table;
+#     E₀ = FitParam(6.4),
+#     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+#     # speed up model evaluation about 3 times
+#     quadrature_points = 13,
+#     n_radii = 600,
+# )
+
+# lp_model = ThickDiscLineProfile(
+#     x -> x^-3,
+#     table;
+#     E₀ = FitParam(6.4),
+#     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+#     # speed up model evaluation about 3 times
+#     quadrature_points = 13,
+#     n_radii = 600,
+# )
+
+# lp_model = LineProfile(
+#     x -> x^-3,
+#     table;
+#     E₀ = FitParam(6.4),
+#     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+#     # speed up model evaluation about 3 times
+#     quadrature_points = 13,
+#     n_radii = 600,
+# )
+
+lp_model = LampPostThickDisc(
+    prof_wrap,
     table;
     E₀ = FitParam(6.4),
     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+    h = FitParam(10.0, lower_limit = 1.0, upper_limit = 10.0),
     # speed up model evaluation about 3 times
     quadrature_points = 13,
-    n_radii = 700,
+    n_radii = 600,
 )
 
 # use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
@@ -109,12 +166,12 @@ datasets = FittableMultiDataset(
     xmm_data[1],
     xmm_data[2],
     xmm_data[3],
-    nustar_data[1],
-    nustar_data[2],
-    nustar_data[3],
-    nustar_data[4],
-    nustar_data[5],
-    nustar_data[6],
+    # nustar_data[1],
+    # nustar_data[2],
+    # nustar_data[3],
+    # nustar_data[4],
+    # nustar_data[5],
+    # nustar_data[6],
 )
 models = FittableMultiModel((model for _ in datasets.d)...)
 
@@ -123,6 +180,8 @@ prob = FittingProblem(models, datasets)
 bind!(prob, :a_2)
 bind!(prob, :a_1)
 bind!(prob, :θ_1)
+bind!(prob, :h_1)
+bind!(prob, :η_1)
 # TODO: figure out how to do the bindings properly
 # bind!(prob, 4 => :K, 5 => :K)
 
@@ -141,7 +200,42 @@ begin
         ylims = (5e-2, 2),
     )
     for i = 2:lastindex(datasets.d)
-        plotresult!(datasets.d[i], result[i])
+        plotresult!(datasets.d[i], result[i], residual_ylims = (-5, 5))
     end
     plot(p, legend = false)
 end
+
+
+# Lamp Post model:
+# 63.213356 seconds (856.76 k allocations: 87.682 MiB)
+# ┌ MultiFittingResult:
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00019783, 0.88696, 41.738, 1.9448, 0.018613, 1.9380]
+# │    . σᵤ    : [1.3407e-05, 0.013914, 0.63051, 1.0785e+14, 0.00014836, 0.0052465]
+# │    . χ²    : 236.15 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00013059, 0.88696, 41.738, 1.9448, 0.011488, 1.9380]
+# │    . σᵤ    : [9.7902e-06, 0.013914, 0.63051, 1.0785e+14, 9.6636e-05, 0.0052465]
+# │    . χ²    : 163.09 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00017355, 0.88696, 41.738, 1.9448, 0.0092871, 1.9380]
+# │    . σᵤ    : [1.4293e-05, 0.013914, 0.63051, 1.0785e+14, 9.3721e-05, 0.0052465]
+# │    . χ²    : 173.20 
+# └ Σχ² = 572.44
+# 
+# Fixed x^-3 emissivity model
+# 33.017601 seconds (8.99 k allocations: 32.273 MiB)
+# ┌ MultiFittingResult:
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00019931, 0.99185, 36.817, 0.018531, 1.9350]
+# │    . σᵤ    : [9.4430e-06, 0.0026029, 0.31457, 0.00014200, 0.0050506]
+# │    . χ²    : 174.95 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00012273, 0.99185, 36.817, 0.011471, 1.9350]
+# │    . σᵤ    : [7.2056e-06, 0.0026029, 0.31457, 9.2235e-05, 0.0050506]
+# │    . χ²    : 154.72 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00016573, 0.99185, 36.817, 0.0092830, 1.9350]
+# │    . σᵤ    : [1.1045e-05, 0.0026029, 0.31457, 8.8328e-05, 0.0050506]
+# │    . χ²    : 161.60 
+# └ Σχ² = 491.26
