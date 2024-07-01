@@ -7,6 +7,9 @@ using GradusSpectralModels
 using JLD2
 # for JLD2 compression
 using CodecZlib
+using Reflionx
+
+include("additional-models.jl")
 
 function read_or_make_transfer_table(path; new = false)
     if isfile(path) && !new
@@ -33,12 +36,13 @@ function read_or_make_transfer_table(path; new = false)
 end
 
 data_path = "data"
-TRANSFER_FUNCTION_PATH = joinpath(data_path, "transfer_function_table.jld2")
+TRANSFER_FUNCTION_PATH = joinpath(data_path, "thin-disc-transfer-table-900.jld2")
+REFLIONX_GRID_DIR = joinpath(data_path, "reflionx/grid")
 
+refl_table = Reflionx.parse_run(REFLIONX_GRID_DIR)
 table = read_or_make_transfer_table(TRANSFER_FUNCTION_PATH);
 
 # XMM data
-
 function prepare_xmm(spec, back, rmf, arf)
     ds = XmmData(XmmEPIC(), spec, background = back, response = rmf, ancillary = arf)
     regroup!(ds)
@@ -77,23 +81,23 @@ for obsid in ["60001047002", "60001047003", "60001047005"]
     end
 end
 
-
 # Fit
 lp_model = LineProfile(
     x -> x^-3,
     table;
-    E₀ = FitParam(6.4),
+    E₀ = FitParam(1.0),
     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
     # speed up model evaluation about 3 times
     quadrature_points = 13,
-    n_radii = 700,
+    n_radii = 600,
 )
 
 # use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
-model = PowerLaw() + AutoCache(lp_model)
-domain = collect(range(1, 10, 200))
-output = invokemodel(domain, model)
+model = PowerLaw() + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
+# model = PowerLaw() + AsConvolution(lp_model)(DeltaLine(E = FitParam(6.4)))
+domain = collect(range(1, 10, 500))
 
+output = invokemodel(domain, model)
 plot(domain[1:end-1], output)
 
 # always use the ISCO
@@ -101,7 +105,9 @@ model.rin_1.frozen = true
 model.rout_1.frozen = true
 model.E₀_1.frozen = true
 
-model
+# model.logξ_1.frozen = true
+# model.E_cut_1.frozen = true
+# model.Γ_1.frozen = true
 
 # make sure the datasets from the same observatory are grouped together
 # else the AutoCache will trigger re-eval as the domain has changed, even through the model parameters will all be the same
@@ -109,12 +115,12 @@ datasets = FittableMultiDataset(
     xmm_data[1],
     xmm_data[2],
     xmm_data[3],
-    nustar_data[1],
-    nustar_data[2],
-    nustar_data[3],
-    nustar_data[4],
-    nustar_data[5],
-    nustar_data[6],
+    # nustar_data[1],
+    # nustar_data[2],
+    # nustar_data[3],
+    # nustar_data[4],
+    # nustar_data[5],
+    # nustar_data[6],
 )
 models = FittableMultiModel((model for _ in datasets.d)...)
 
@@ -123,10 +129,11 @@ prob = FittingProblem(models, datasets)
 bind!(prob, :a_2)
 bind!(prob, :a_1)
 bind!(prob, :θ_1)
-# TODO: figure out how to do the bindings properly
-# bind!(prob, 4 => :K, 5 => :K)
+bind!(prob, :Γ_1)
+bind!(prob, :logξ_1)
+bind!(prob, :E_cut_1)
 
-result = @time fit(prob, LevenbergMarquadt(); verbose = true)
+result = @time fit(prob, LevenbergMarquadt(); verbose = true, x_tol = 1e-3, max_iter = 100)
 # looking to improve on
 #  78.044531 seconds (9.23 M allocations: 1.073 GiB, 0.23% gc time, 28.93% compilation time)
 #  55.780932 seconds (38.87 k allocations: 513.027 MiB, 0.24% gc time)
@@ -145,3 +152,38 @@ begin
     end
     plot(p, legend = false)
 end
+
+
+# Lamp Post model:
+# 63.213356 seconds (856.76 k allocations: 87.682 MiB)
+# ┌ MultiFittingResult:
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00019783, 0.88696, 41.738, 1.9448, 0.018613, 1.9380]
+# │    . σᵤ    : [1.3407e-05, 0.013914, 0.63051, 1.0785e+14, 0.00014836, 0.0052465]
+# │    . χ²    : 236.15 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00013059, 0.88696, 41.738, 1.9448, 0.011488, 1.9380]
+# │    . σᵤ    : [9.7902e-06, 0.013914, 0.63051, 1.0785e+14, 9.6636e-05, 0.0052465]
+# │    . χ²    : 163.09 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00017355, 0.88696, 41.738, 1.9448, 0.0092871, 1.9380]
+# │    . σᵤ    : [1.4293e-05, 0.013914, 0.63051, 1.0785e+14, 9.3721e-05, 0.0052465]
+# │    . χ²    : 173.20 
+# └ Σχ² = 572.44
+# 
+# Fixed x^-3 emissivity model
+# 33.017601 seconds (8.99 k allocations: 32.273 MiB)
+# ┌ MultiFittingResult:
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00019931, 0.99185, 36.817, 0.018531, 1.9350]
+# │    . σᵤ    : [9.4430e-06, 0.0026029, 0.31457, 0.00014200, 0.0050506]
+# │    . χ²    : 174.95 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00012273, 0.99185, 36.817, 0.011471, 1.9350]
+# │    . σᵤ    : [7.2056e-06, 0.0026029, 0.31457, 9.2235e-05, 0.0050506]
+# │    . χ²    : 154.72 
+# │    Model: CompositeModel[PowerLaw + AutoCache]
+# │    . u     : [0.00016573, 0.99185, 36.817, 0.0092830, 1.9350]
+# │    . σᵤ    : [1.1045e-05, 0.0026029, 0.31457, 8.8328e-05, 0.0050506]
+# │    . χ²    : 161.60 
+# └ Σχ² = 491.26
