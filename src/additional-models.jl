@@ -5,7 +5,10 @@ struct DiscProfileGrid{V<:AbstractVector}
     emissivity::V
 end
 
-function Gradus.restructure(grid::DiscProfileGrid, vs::AbstractVector)
+function Gradus.MultiLinearInterpolations.restructure(
+    grid::DiscProfileGrid,
+    vs::AbstractVector,
+)
     @views begin
         DiscProfileGrid(
             vs[1:length(grid.radii)],

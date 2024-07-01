@@ -7,7 +7,7 @@ using GradusSpectralModels
 using JLD2
 # for JLD2 compression
 using CodecZlib
-# using OptimizationOptimJL
+using Reflionx
 
 include("additional-models.jl")
 
@@ -36,34 +36,11 @@ function read_or_make_transfer_table(path; new = false)
 end
 
 data_path = "data"
-# TRANSFER_FUNCTION_PATH = joinpath(data_path, "transfer_function_table.jld2")
 TRANSFER_FUNCTION_PATH = joinpath(data_path, "thin-disc-transfer-table-900.jld2")
-TRANSFER_FUNCTION_PATH = joinpath(data_path, "thick-disc-transfer-table-new.jld2")
+REFLIONX_GRID_DIR = joinpath(data_path, "reflionx/grid")
 
-LAMP_POST_PROFILE_PATH = joinpath(data_path, "lamp-post-profile.jld2")
-
+refl_table = Reflionx.parse_run(REFLIONX_GRID_DIR)
 table = read_or_make_transfer_table(TRANSFER_FUNCTION_PATH);
-for grid in table.grids
-    replace!(grid.lower_f, NaN => 0.0)
-    replace!(grid.upper_f, NaN => 0.0)
-end
-
-# emissivity profile table
-a_range = collect(range(0.0, 0.998, 10))
-h_range = collect(range(1.0, 10.0, 10))
-η_range = collect(range(0.01, 0.3, 10))
-
-prof_wrap = if isfile(LAMP_POST_PROFILE_PATH)
-    f = jldopen(LAMP_POST_PROFILE_PATH, "r")
-    prof = f["lamp_post"]
-    close(f)
-    prof
-else
-    prof_wrap = @time tabulate_emissivity_profile(a_range, h_range, η_range)
-    jldopen(LAMP_POST_PROFILE_PATH, "w"; compress = true) do f
-        f["lamp_post"] = prof_wrap
-    end
-end
 
 # XMM data
 function prepare_xmm(spec, back, rmf, arf)
@@ -105,52 +82,23 @@ for obsid in ["60001047002", "60001047003", "60001047005"]
 end
 
 # Fit
-# lp_model = LampPostLineProfile(
-#     prof_wrap,
-#     table;
-#     E₀ = FitParam(6.4),
-#     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
-#     # speed up model evaluation about 3 times
-#     quadrature_points = 13,
-#     n_radii = 600,
-# )
-
-# lp_model = ThickDiscLineProfile(
-#     x -> x^-3,
-#     table;
-#     E₀ = FitParam(6.4),
-#     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
-#     # speed up model evaluation about 3 times
-#     quadrature_points = 13,
-#     n_radii = 600,
-# )
-
-# lp_model = LineProfile(
-#     x -> x^-3,
-#     table;
-#     E₀ = FitParam(6.4),
-#     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
-#     # speed up model evaluation about 3 times
-#     quadrature_points = 13,
-#     n_radii = 600,
-# )
-
-lp_model = LampPostThickDisc(
-    prof_wrap,
+lp_model = LineProfile(
+    x -> x^-3,
     table;
-    E₀ = FitParam(6.4),
+    E₀ = FitParam(1.0),
     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
-    h = FitParam(10.0, lower_limit = 1.0, upper_limit = 10.0),
     # speed up model evaluation about 3 times
     quadrature_points = 13,
     n_radii = 600,
 )
 
-# use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
-model = PowerLaw() + AutoCache(lp_model)
-domain = collect(range(1, 10, 200))
-output = invokemodel(domain, model)
 
+# use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
+model = PowerLaw() + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
+# model = PowerLaw() + AsConvolution(lp_model)(DeltaLine(E = FitParam(6.4)))
+domain = collect(range(1, 10, 500))
+
+output = invokemodel(domain, model)
 plot(domain[1:end-1], output)
 
 # always use the ISCO
@@ -158,7 +106,9 @@ model.rin_1.frozen = true
 model.rout_1.frozen = true
 model.E₀_1.frozen = true
 
-model
+# model.logξ_1.frozen = true
+# model.E_cut_1.frozen = true
+# model.Γ_1.frozen = true
 
 # make sure the datasets from the same observatory are grouped together
 # else the AutoCache will trigger re-eval as the domain has changed, even through the model parameters will all be the same
@@ -180,12 +130,11 @@ prob = FittingProblem(models, datasets)
 bind!(prob, :a_2)
 bind!(prob, :a_1)
 bind!(prob, :θ_1)
-bind!(prob, :h_1)
-bind!(prob, :η_1)
-# TODO: figure out how to do the bindings properly
-# bind!(prob, 4 => :K, 5 => :K)
+bind!(prob, :Γ_1)
+bind!(prob, :logξ_1)
+bind!(prob, :E_cut_1)
 
-result = @time fit(prob, LevenbergMarquadt(); verbose = true)
+result = @time fit(prob, LevenbergMarquadt(); verbose = true, x_tol = 1e-3, max_iter = 100)
 # looking to improve on
 #  78.044531 seconds (9.23 M allocations: 1.073 GiB, 0.23% gc time, 28.93% compilation time)
 #  55.780932 seconds (38.87 k allocations: 513.027 MiB, 0.24% gc time)
@@ -212,30 +161,30 @@ end
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00019783, 0.88696, 41.738, 1.9448, 0.018613, 1.9380]
 # │    . σᵤ    : [1.3407e-05, 0.013914, 0.63051, 1.0785e+14, 0.00014836, 0.0052465]
-# │    . χ²    : 236.15 
+# │    . χ²    : 236.15
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00013059, 0.88696, 41.738, 1.9448, 0.011488, 1.9380]
 # │    . σᵤ    : [9.7902e-06, 0.013914, 0.63051, 1.0785e+14, 9.6636e-05, 0.0052465]
-# │    . χ²    : 163.09 
+# │    . χ²    : 163.09
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00017355, 0.88696, 41.738, 1.9448, 0.0092871, 1.9380]
 # │    . σᵤ    : [1.4293e-05, 0.013914, 0.63051, 1.0785e+14, 9.3721e-05, 0.0052465]
-# │    . χ²    : 173.20 
+# │    . χ²    : 173.20
 # └ Σχ² = 572.44
-# 
+#
 # Fixed x^-3 emissivity model
 # 33.017601 seconds (8.99 k allocations: 32.273 MiB)
 # ┌ MultiFittingResult:
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00019931, 0.99185, 36.817, 0.018531, 1.9350]
 # │    . σᵤ    : [9.4430e-06, 0.0026029, 0.31457, 0.00014200, 0.0050506]
-# │    . χ²    : 174.95 
+# │    . χ²    : 174.95
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00012273, 0.99185, 36.817, 0.011471, 1.9350]
 # │    . σᵤ    : [7.2056e-06, 0.0026029, 0.31457, 9.2235e-05, 0.0050506]
-# │    . χ²    : 154.72 
+# │    . χ²    : 154.72
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00016573, 0.99185, 36.817, 0.0092830, 1.9350]
 # │    . σᵤ    : [1.1045e-05, 0.0026029, 0.31457, 8.8328e-05, 0.0050506]
-# │    . χ²    : 161.60 
+# │    . χ²    : 161.60
 # └ Σχ² = 491.26
