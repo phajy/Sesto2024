@@ -26,3 +26,4 @@ Manifest.toml
 # My own files
 .DS_Store
 .vscode/settings.json
+data/reflionx
