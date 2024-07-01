@@ -92,6 +92,7 @@ lp_model = LineProfile(
     n_radii = 600,
 )
 
+
 # use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
 model = PowerLaw() + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
 # model = PowerLaw() + AsConvolution(lp_model)(DeltaLine(E = FitParam(6.4)))
@@ -148,7 +149,7 @@ begin
         ylims = (5e-2, 2),
     )
     for i = 2:lastindex(datasets.d)
-        plotresult!(datasets.d[i], result[i])
+        plotresult!(datasets.d[i], result[i], residual_ylims = (-5, 5))
     end
     plot(p, legend = false)
 end
@@ -160,30 +161,30 @@ end
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00019783, 0.88696, 41.738, 1.9448, 0.018613, 1.9380]
 # │    . σᵤ    : [1.3407e-05, 0.013914, 0.63051, 1.0785e+14, 0.00014836, 0.0052465]
-# │    . χ²    : 236.15 
+# │    . χ²    : 236.15
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00013059, 0.88696, 41.738, 1.9448, 0.011488, 1.9380]
 # │    . σᵤ    : [9.7902e-06, 0.013914, 0.63051, 1.0785e+14, 9.6636e-05, 0.0052465]
-# │    . χ²    : 163.09 
+# │    . χ²    : 163.09
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00017355, 0.88696, 41.738, 1.9448, 0.0092871, 1.9380]
 # │    . σᵤ    : [1.4293e-05, 0.013914, 0.63051, 1.0785e+14, 9.3721e-05, 0.0052465]
-# │    . χ²    : 173.20 
+# │    . χ²    : 173.20
 # └ Σχ² = 572.44
-# 
+#
 # Fixed x^-3 emissivity model
 # 33.017601 seconds (8.99 k allocations: 32.273 MiB)
 # ┌ MultiFittingResult:
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00019931, 0.99185, 36.817, 0.018531, 1.9350]
 # │    . σᵤ    : [9.4430e-06, 0.0026029, 0.31457, 0.00014200, 0.0050506]
-# │    . χ²    : 174.95 
+# │    . χ²    : 174.95
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00012273, 0.99185, 36.817, 0.011471, 1.9350]
 # │    . σᵤ    : [7.2056e-06, 0.0026029, 0.31457, 9.2235e-05, 0.0050506]
-# │    . χ²    : 154.72 
+# │    . χ²    : 154.72
 # │    Model: CompositeModel[PowerLaw + AutoCache]
 # │    . u     : [0.00016573, 0.99185, 36.817, 0.0092830, 1.9350]
 # │    . σᵤ    : [1.1045e-05, 0.0026029, 0.31457, 8.8328e-05, 0.0050506]
-# │    . χ²    : 161.60 
+# │    . χ²    : 161.60
 # └ Σχ² = 491.26
