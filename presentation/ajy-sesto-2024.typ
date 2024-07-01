@@ -11,11 +11,11 @@
 // Slide 1
 #polylux-slide[
   #align(horizon + center)[
-    = Fitting realistic disc, corona, and \ spacetime models to data
+    = Fitting realistic disc, corona, and \ spacetime models
 
     Dr Andrew Young \ University of Bristol
 
-    With thanks to collaborators \ Fergus Baker and Jiachen Jiang
+    Thanks to Fergus Baker & Jiachen Jiang
     // and others
   ]
 ]
@@ -24,7 +24,15 @@
 #polylux-slide[
   == Introduction
 
-  Introductory text placeholder
+  - Disc reflection and iron lines
+  - Calculating line profiles for different geometries
+  - _XMM-Newton_ and _NuSTAR_ observations of MCG--6-30-15
+  - Measuring black holes spin
+  - Thick discs with different Eddington fractions
+  - Extended corona geometries
+  - Testing the Kerr hypothesis by fitting "deformation parameters"
+  - X-ray timing, light echoes, and reverberation
+  - The future (_XRISM_, _Athena_, ...)
 ]
 
 // Slide 3
