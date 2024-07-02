@@ -15,8 +15,7 @@
 
     Dr Andrew Young \ University of Bristol
 
-    Thanks to Fergus Baker & Jiachen Jiang
-    // and others
+    With thanks to Fergus Baker, \ Jiachen Jiang & Wiktoria Tarnopolska
   ]
 ]
 
@@ -43,10 +42,17 @@
 ]
 
 // Slide 4
+// nice figure showing some ray tracing from an extended corona above the disc
 #polylux-slide[
   == Calculating iron line profiles
 
-  Something about Gradus.jl
+  #side-by-side[
+    - Something about Gradus.jl
+    - Open source
+  ][
+    _Figure here_
+  ]
+
 ]
 
 // Slide 5
@@ -57,6 +63,7 @@
 ]
 
 // Slide 6
+// nice figure showing how disc image with changing spin for Kerr metric and corresponding line profile
 #polylux-slide[
   == Spin
 
