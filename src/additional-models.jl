@@ -50,7 +50,7 @@ function ThickDiscLineProfile(
     table::Gradus.CunninghamTransferTable;
     K = FitParam(1.0),
     a = FitParam(0.998),
-    θ = FitParam(45.0),
+    θ = FitParam(30.0),
     η = FitParam(0.2, lower_limit = 0.0, upper_limit = 0.3),
     rin = FitParam(1.0),
     rout = FitParam(100.0, upper_limit = 100.0),
