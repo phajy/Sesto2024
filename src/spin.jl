@@ -80,9 +80,10 @@ lp_model = LineProfile(
     n_radii = 600,
 )
 
+# model = PowerLaw()
 # use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
-model = PowerLaw() + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
-# model = PowerLaw() + AsConvolution(lp_model)(DeltaLine(E = FitParam(6.4)))
+# model = PowerLaw() + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
+model = PowerLaw() + AsConvolution(lp_model)(DeltaLine(E = FitParam(6.4)))
 domain = collect(range(1, 10, 500))
 
 output = invokemodel(domain, model)

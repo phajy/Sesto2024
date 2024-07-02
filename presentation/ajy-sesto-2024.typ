@@ -57,7 +57,7 @@
 
 // Slide 5
 #polylux-slide[
-  == XMM and NuSTAR data
+  == _XMM_ and _NuSTAR_ data
 
   Describe the data we'll be using
 ]
@@ -67,7 +67,21 @@
 #polylux-slide[
   == Spin
 
-  Describe the model
+  #side-by-side[
+    #figure(
+      image("disc_a_0.svg", width: 60%),
+      // caption: [$a = 0$ static]
+    )
+    #figure(
+      image("disc_a_0_998.svg", width: 60%),
+      // caption: [$a = 0.998$ maximally spinning]
+    )
+  ][
+    - The spin of the Black Hole (BH) determines the Innermost Stable Circular Orbit (ISCO)
+    - Static BH with $a = 0$ has ISCO at $6 r_g$
+    - Maximally spinning BH with $a = 0.998$, has ISCO at $1.235 r_g$
+    - More extreme velocities and stronger gravitational redshift experienced at higher spins
+  ]
 ]
 
 // Slide 7
@@ -81,7 +95,13 @@
 #polylux-slide[
   == Thick discs
 
-  Describe the model
+  - Traditionally model a razor thin discs defined by $theta = pi/2$ as an approximation to a realistic disc with some finite thickness
+  - We can model a Shakura & Sunyaev (1973) disc with a finite thickness, including the relativistic effects considered by Page & Thorne (1974)
+  - Extends work of Taylor & Reynolds (2018)
+  - In principle we can have arbitrary spacetime and corona geometries (see later)
+
+  // include figure of edge-on plot showing change in thickness with Eddington fractions
+  // some nice renders of disc images showing the eclipsing of the inner parts of the disc at it thickens
 ]
 
 // Slide 9
@@ -104,21 +124,30 @@
   == Results
 
   Show the results
+
+  // would be nice to show a plot constraining, e.g., corona height and BH spin, or similar
+  // maybe corona size (w x h) and height but that might have to wait until later
 ]
 
 // Slide 12
 #polylux-slide[
   == Deformation parameters
 
-  - Describe the model
-  - Multiple parameters
+  - Models typically restricted to Schwarzschild or Kerr for simplicity
+  - Modified metrics have been used but required significant analytic work to determine geodesics, ISCO, redshifts, work for limited disc and corona geometries, and limited parameter flexibility
+  - `Gradus.jl` allows us to work with any metric and geometry
+  - Consider the "deformation" parameters that quantify departures from the Kerr metric (Johannsen 2013; Johannsen & Psaltis 2010)
+  - We don't need any analytic calculations - we just feed in the metric
+  - Can allow arbitrary combinations of deformation parameters not limited to varying one at a time
 ]
 
 // Slide 13
 #polylux-slide[
   == Results
 
-  Show the results
+  - We can build on the work of, e.g., Tripathi et al. (2019, 2021), Abdikamalov et al. (2020), Jiang et al. (2022)
+
+  // would be nice to show some confidence contours of two deformation parameters :)
 ]
 
 // Slide 14
