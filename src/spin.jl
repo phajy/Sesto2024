@@ -77,16 +77,29 @@ lp_model = LineProfile(
     table;
     E₀ = FitParam(1.0),
     a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+    θ = FitParam(35.0, lower_limit = 10.0, upper_limit = 80.0),
+    rout = FitParam(400.0, frozen=true),
     # speed up model evaluation about 3 times
     quadrature_points = 13,
     n_radii = 600,
 )
 
-model = PowerLaw()
-# model = XS_CutOffPowerLaw(Ecut = FitParam(125.0, lower_limit=100.0, upper_limit=200.0), z = FitParam(0.007749, frozen=true))
+# power law model - used in the presentation to show the iron line and Compton hump
+# model = PowerLaw()
+
 # use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
+
 # model = PowerLaw() + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
-# model = PowerLaw() + AsConvolution(lp_model)(DeltaLine(E = FitParam(6.4)))
+
+# model = XS_CutOffPowerLaw(Ecut = FitParam(125.0, lower_limit=100.0, upper_limit=200.0), z = FitParam(0.007749, frozen=true))
+
+# comparison with Laor model
+# model = PowerLaw(K = FitParam(1.0E-3)) + XS_Laor(K = FitParam(1.0E-5), lineE = FitParam(6.35, frozen=true), θ = FitParam(30.0, lower_limit = 10.0, upper_limit = 80.0))
+
+# simple fit with iron line and r^-3 emissivity profile
+# we can fit this to just the xmm data set
+model = PowerLaw(K = FitParam(1.0E-3)) + AsConvolution(lp_model)(DeltaLine(K = FitParam(1.0E-5), E = FitParam(6.35, frozen=true, lower_limit=6.0, upper_limit=7.0)))
+
 domain = collect(range(1, 10, 500))
 
 output = invokemodel(domain, model)
@@ -97,24 +110,31 @@ model.rin_1.frozen = true
 model.rout_1.frozen = true
 model.E₀_1.frozen = true
 
+model.a_1.frozen = true
+model.θ_1.frozen = true
+
 # model.logξ_1.frozen = true
 # model.E_cut_1.frozen = true
 # model.Γ_1.frozen = true
 
 # make sure the datasets from the same observatory are grouped together
 # else the AutoCache will trigger re-eval as the domain has changed, even through the model parameters will all be the same
-datasets = FittableMultiDataset(
-    xmm, nustar_a, nustar_b
-)
-models = FittableMultiModel((model for _ in datasets.d)...)
+# datasets = FittableMultiDataset(
+    # xmm, nustar_a, nustar_b
+# )
+# models = FittableMultiModel((model for _ in datasets.d)...)
 
-prob = FittingProblem(models, datasets)
+# prob = FittingProblem(models, datasets)
+
+# just fit to XMM
+prob = FittingProblem(model, xmm)
 
 # cut off power law
 # bind!(prob, :Γ)
 # bind!(prob, :Ecut)
-# power law
-bind!(prob, :a)
+
+# power law only
+# bind!(prob, :a)
 
 # reflection model
 # bind!(prob, :a_2)
@@ -128,20 +148,20 @@ bind!(prob, :a)
 
 result = @time fit(prob, LevenbergMarquadt(); verbose = true, x_tol = 1e-3, max_iter = 100)
 
-begin
-    p = plotresult(
-        datasets.d[1],
-        result[1],
-        xscale = :log10,
-        yscale = :log10,
-        xlims = (3, 30),
-        ylims = (5e-5, 2),
-    )
-    for i = 2:lastindex(datasets.d)
-        plotresult!(datasets.d[i], result[i], residual_ylims = (-5, 5))
-    end
-    plot(p, legend = false)
-end
+# begin
+#     p = plotresult(
+#         datasets.d[1],
+#         result[1],
+#         xscale = :log10,
+#         yscale = :log10,
+#         xlims = (3, 30),
+#         ylims = (5e-5, 2),
+#     )
+#     for i = 2:lastindex(datasets.d)
+#         plotresult!(datasets.d[i], result[i], residual_ylims = (-5, 5))
+#     end
+#     plot(p, legend = false)
+# end
 
 # create data files for plots that can be rendered in Veusz for presentation
 # note that the "pm" column names should be renamed "+-" for Veusz to interpret them as error bars
@@ -197,9 +217,13 @@ function output_result(ds, result, bin_factor, file_path)
         ds_ratio = ds_ratio,
         ds_ratio_pm = ds_ratio_err
     )
-    CSV.write(file_path, df)
+    custom_header = "ds_e,ds_spec,+-,ds_model,ds_residuals,+-,ds_ratio,+-"
+    open(file_path, "w") do f
+        println(f, custom_header)
+        CSV.write(f, df, append=true, header=false)
+    end
 end
 
 output_result(xmm, result[1], 10, "presentation/spin_results_xmm.csv")
-output_result(nustar_a, result[2], 10, "presentation/spin_results_nustar_a.csv")
-output_result(nustar_b, result[3], 10, "presentation/spin_results_nustar_b.csv")
+# output_result(nustar_a, result[2], 10, "presentation/spin_results_nustar_a.csv")
+# output_result(nustar_b, result[3], 10, "presentation/spin_results_nustar_b.csv")

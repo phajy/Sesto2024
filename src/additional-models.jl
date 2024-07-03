@@ -225,8 +225,8 @@ function LampPostThickDisc(
     profile,
     table::Gradus.CunninghamTransferTable;
     K = FitParam(1.0),
-    a = FitParam(0.998),
-    θ = FitParam(45.0),
+    a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+    θ = FitParam(45.0, lower_limit = 5.0, upper_limit = 85.0),
     h = FitParam(5.0, lower_limit = 0.0, upper_limit = 20.0),
     η = FitParam(0.01, lower_limit = 0.01, upper_limit = 0.3),
     rin = FitParam(1.0),
