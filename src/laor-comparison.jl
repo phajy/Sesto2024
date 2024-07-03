@@ -61,7 +61,7 @@ model_gradus = AsConvolution(lp_model)(DeltaLine(K = FitParam(1.0E-5), E = FitPa
 domain = collect(range(1, 10, 500))
 
 output_laor = invokemodel(domain, model_laor)
-plot(domain[1:end-1], output_laor)
+plot(domain[1:end-1], output_laor, label="Laor")
 
 output_gradus = 0.2 * invokemodel(domain, model_gradus)
-plot!(domain[1:end-1], output_gradus)
+plot!(domain[1:end-1], output_gradus, label="Gradus")
