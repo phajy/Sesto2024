@@ -34,11 +34,32 @@
   - The future (_XRISM_, _Athena_, ...)
 ]
 
-// Slide 3
+// Slide ?
+// add one of the standard figures to the right - e.g., the NASA accretion disc artist's impression (we should probably make a more realistic version at some point)
 #polylux-slide[
-  == Iron lines
+  == Questions...
 
-  How are iron lines produced
+  - What is the accretion disc geometry?
+    - Disc thickness, inner radius
+  - What is the corona geometry?
+    - Size, shape, location
+  - What is the spacetime geometry?
+    - How fast is the black hole spinning?
+    - Is General Relativity an accurate description?
+]
+
+// Slide 3
+// include figure of reflection spectrum
+#polylux-slide[
+  == Reflection spectroscopy
+
+  - Accretion disc is illuminated by X-rays
+  - These X-rays are reprocessed ("reflected") by the disc
+    - Photoelectrically absorbed (most likely below $~6-7$ keV)
+      - Resulting in fluorescence ($1/3$ of the time for iron)
+      - Ejection of an outer electron
+    - Compton scattered (most likely above $~6-7$ keV)
+  - Resulting reflection spectrum has a strong iron fluorescence line at 6.4 keV and "Compton hump" at $20-30$ keV
 ]
 
 // Slide 4
@@ -47,7 +68,10 @@
   == Calculating iron line profiles
 
   #side-by-side[
-    - Something about Gradus.jl
+    - We use `Gradus.jl`
+    - Disc illumination
+    - Doppler shifts
+    - Gravitational redshifts
     - Open source
   ][
     _Figure here_
@@ -57,13 +81,21 @@
 
 // Slide 5
 #polylux-slide[
-  == _XMM_ and _NuSTAR_ data
+  == Ratio of _XMM_ and _NuSTAR_ data to power law model
 
-  Describe the data we'll be using
+  // Describe the data we'll be using
+  // perhaps make this figure a ratio plot with a wider aspect ratio
+
+  #figure(
+    image("powerlaw_fit.svg", width: 70%),
+  )
+
+  Broad iron K$alpha$ line $~6.4$ keV and Compton huump $~20-30$ keV
 ]
 
 // Slide 6
 // nice figure showing how disc image with changing spin for Kerr metric and corresponding line profile
+// could replace one of the figures with an image showing contours of the ISCO as a function of a
 #polylux-slide[
   == Spin
 
