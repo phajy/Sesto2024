@@ -55,13 +55,13 @@ lp_model = LineProfile(
 # comparison with Laor model
 model_laor = XS_Laor(K = FitParam(1.0E-5), lineE = FitParam(6.35, frozen=true), θ = FitParam(30.0, lower_limit = 10.0, upper_limit = 80.0))
 
-# iron line and r^-3 emissivity profile
-model_gradus = AsConvolution(lp_model)(DeltaLine(K = FitParam(1.0E-5), E = FitParam(6.35, frozen=true, lower_limit=6.0, upper_limit=7.0)))
+# iron line and r^-3 emissivity profile with convolution
+model_gradus = AsConvolution(lp_model, domain = collect(range(0, 2, 500)))(DeltaLine(K = FitParam(1.0E-5), E = FitParam(6.35, frozen=true, lower_limit=6.0, upper_limit=7.0)))
 
 domain = collect(range(1, 10, 500))
 
 output_laor = invokemodel(domain, model_laor)
 plot(domain[1:end-1], output_laor, label="Laor")
 
-output_gradus = 0.2 * invokemodel(domain, model_gradus)
+output_gradus = 0.8 * invokemodel(domain, model_gradus)
 plot!(domain[1:end-1], output_gradus, label="Gradus")
