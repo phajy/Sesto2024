@@ -45,26 +45,31 @@ REFLIONX_GRID_DIR = joinpath(data_path, "reflionx/grid")
 refl_table = Reflionx.parse_run(REFLIONX_GRID_DIR)
 table = read_or_make_transfer_table(TRANSFER_FUNCTION_PATH);
 
-# merged XMM data (just for the sake of the example; not for publication)
-spec = joinpath(data_path, "merge_xmm_grp.pha")
-back = joinpath(data_path, "merge_xmm.bak")
-rmf = joinpath(data_path, "merge_xmm.rsp")
-xmm = XmmData(XmmEPIC(), spec, background = back, response = rmf, ancillary = nothing)
+# longest XMM and NuSTAR data sets for the sake of example
+# will use _all_ data sets for publication
+# attempted to use merged data for illustrative purposes but that was not a good idea
+
+# XMM data
+spec = joinpath(data_path, "PN_spectrum_grp_0693781301_S003_total.fits")
+back = joinpath(data_path, "PNbackground_spectrum_0693781301_S003_total.fits")
+rmf = joinpath(data_path, "PN_0693781301_S003_total.rmf")
+arf = joinpath(data_path, "PN_0693781301_S003_total.arf")
+xmm = XmmData(XmmEPIC(), spec, background = back, response = rmf, ancillary = arf)
 regroup!(xmm)
 drop_bad_channels!(xmm)
 mask_energies!(xmm, 3.0, 10.0)
 subtract_background!(xmm)
 normalize!(xmm)
 
-# merged NuSTAR data
-nustar_a = NuStarData(joinpath(data_path, "merge_nustar_a_grp.pha"))
+# NuSTAR data
+nustar_a = NuStarData(joinpath(data_path, "nu60001047003A01_sr_min20.pha"))
 regroup!(nustar_a)
 drop_bad_channels!(nustar_a)
 mask_energies!(nustar_a, 3.0, 50.0)
 subtract_background!(nustar_a)
 normalize!(nustar_a)
 
-nustar_b = NuStarData(joinpath(data_path, "merge_nustar_b_grp.pha"))
+nustar_b = NuStarData(joinpath(data_path, "nu60001047003B01_sr_min20.pha"))
 regroup!(nustar_b)
 drop_bad_channels!(nustar_b)
 mask_energies!(nustar_a, 3.0, 50.0)
@@ -89,7 +94,9 @@ lp_model = LineProfile(
 
 # use the AutoCache wrapper to avoid re-evaluating an expensive model unnecessary
 
-# model = PowerLaw() + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
+# model = PowerLaw(a = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.2)) + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
+
+model = XS_CutOffPowerLaw(Γ = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.2), Ecut = FitParam(125.0, lower_limit=100.0, upper_limit=200.0), z = FitParam(0.007749, frozen=true)) + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), logξ = FitParam(3.0), refl_table))
 
 # model = XS_CutOffPowerLaw(Ecut = FitParam(125.0, lower_limit=100.0, upper_limit=200.0), z = FitParam(0.007749, frozen=true))
 
@@ -98,12 +105,12 @@ lp_model = LineProfile(
 
 # simple fit with iron line and r^-3 emissivity profile
 # we can fit this to just the xmm data set
-model = PowerLaw(K = FitParam(1.0E-3)) + AsConvolution(lp_model)(DeltaLine(K = FitParam(1.0E-5), E = FitParam(6.35, frozen=true, lower_limit=6.0, upper_limit=7.0)))
+# model = PowerLaw(K = FitParam(1.0E-3)) + AsConvolution(lp_model, domain = collect(range(0, 2, 500)))(DeltaLine(K = FitParam(1.0E-5), E = FitParam(6.35, frozen=true, lower_limit=6.0, upper_limit=7.0)))
 
-domain = collect(range(1, 10, 500))
+domain = collect(range(1, 50, 500))
 
 output = invokemodel(domain, model)
-plot(domain[1:end-1], output)
+plot(domain[1:end-1], output, xscale=:log10, yscale=:log10)
 
 # always use the ISCO
 model.rin_1.frozen = true
@@ -111,7 +118,7 @@ model.rout_1.frozen = true
 model.E₀_1.frozen = true
 
 model.a_1.frozen = true
-model.θ_1.frozen = true
+# model.θ_1.frozen = true
 
 # model.logξ_1.frozen = true
 # model.E_cut_1.frozen = true
@@ -119,15 +126,15 @@ model.θ_1.frozen = true
 
 # make sure the datasets from the same observatory are grouped together
 # else the AutoCache will trigger re-eval as the domain has changed, even through the model parameters will all be the same
-# datasets = FittableMultiDataset(
-    # xmm, nustar_a, nustar_b
-# )
-# models = FittableMultiModel((model for _ in datasets.d)...)
+datasets = FittableMultiDataset(
+    xmm, nustar_a, nustar_b
+)
+models = FittableMultiModel((model for _ in datasets.d)...)
 
-# prob = FittingProblem(models, datasets)
+prob = FittingProblem(models, datasets)
 
 # just fit to XMM
-prob = FittingProblem(model, xmm)
+# prob = FittingProblem(model, xmm)
 
 # cut off power law
 # bind!(prob, :Γ)
@@ -141,27 +148,33 @@ prob = FittingProblem(model, xmm)
 # bind!(prob, :a_1)
 # bind!(prob, :θ_1)
 # bind!(prob, :Γ_1)
-# bind!(prob, :logξ_1)
+bind!(prob, :logξ_1)
 # bind!(prob, :E_cut_1)
+
+# cutoff powerlaw reflection
+bind!(prob, :Γ_1)
+bind!(prob, :θ_1)
+bind!(prob, :Γ_2)
+bind!(prob, :Ecut_1)
 
 # push!(prob.bindings, [1 => 2, 1 => 8, 2 => 2, 2 => 8, 3 => 2, 3 => 8, 4 => 2, 4 => 8, 5 => 2, 5 => 8, 6 => 2, 6 => 8, 7 => 2, 7 => 8, 8 => 2, 8 => 8, 9 => 2, 9 => 8]) # <-- this does not work (was for un-merged data sets)
 
 result = @time fit(prob, LevenbergMarquadt(); verbose = true, x_tol = 1e-3, max_iter = 100)
 
-# begin
-#     p = plotresult(
-#         datasets.d[1],
-#         result[1],
-#         xscale = :log10,
-#         yscale = :log10,
-#         xlims = (3, 30),
-#         ylims = (5e-5, 2),
-#     )
-#     for i = 2:lastindex(datasets.d)
-#         plotresult!(datasets.d[i], result[i], residual_ylims = (-5, 5))
-#     end
-#     plot(p, legend = false)
-# end
+begin
+    p = plotresult(
+        datasets.d[1],
+        result[1],
+        xscale = :log10,
+        yscale = :log10,
+        xlims = (3, 30),
+        ylims = (5e-5, 2),
+    )
+    for i = 2:lastindex(datasets.d)
+        plotresult!(datasets.d[i], result[i], residual_ylims = (-5, 5))
+    end
+    plot(p, legend = false)
+end
 
 # create data files for plots that can be rendered in Veusz for presentation
 # note that the "pm" column names should be renamed "+-" for Veusz to interpret them as error bars
@@ -225,5 +238,5 @@ function output_result(ds, result, bin_factor, file_path)
 end
 
 output_result(xmm, result[1], 10, "presentation/spin_results_xmm.csv")
-# output_result(nustar_a, result[2], 10, "presentation/spin_results_nustar_a.csv")
-# output_result(nustar_b, result[3], 10, "presentation/spin_results_nustar_b.csv")
+output_result(nustar_a, result[2], 10, "presentation/spin_results_nustar_a.csv")
+output_result(nustar_b, result[3], 10, "presentation/spin_results_nustar_b.csv")
