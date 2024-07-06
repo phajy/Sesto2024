@@ -96,7 +96,7 @@ lp_model = LineProfile(
 
 # model = PowerLaw(a = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.2)) + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), refl_table))
 
-model = XS_CutOffPowerLaw(Γ = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.2), Ecut = FitParam(125.0, lower_limit=100.0, upper_limit=200.0), z = FitParam(0.007749, frozen=true)) + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), logξ = FitParam(3.0), refl_table))
+# model = XS_CutOffPowerLaw(Γ = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.2), Ecut = FitParam(125.0, lower_limit=100.0, upper_limit=200.0), z = FitParam(0.007749, frozen=true)) + AsConvolution(lp_model)(ReflionxTable(K = FitParam(1e-7), logξ = FitParam(3.0), refl_table))
 
 # model = XS_CutOffPowerLaw(Ecut = FitParam(125.0, lower_limit=100.0, upper_limit=200.0), z = FitParam(0.007749, frozen=true))
 
@@ -105,7 +105,7 @@ model = XS_CutOffPowerLaw(Γ = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.
 
 # simple fit with iron line and r^-3 emissivity profile
 # we can fit this to just the xmm data set
-# model = PowerLaw(K = FitParam(1.0E-3)) + AsConvolution(lp_model, domain = collect(range(0, 2, 500)))(DeltaLine(K = FitParam(1.0E-5), E = FitParam(6.35, frozen=true, lower_limit=6.0, upper_limit=7.0)))
+model = DeltaLine(K = FitParam(1e-5), E = FitParam(6.35, frozen = true)) + PowerLaw(K = FitParam(1.0E-3, upper_limit=0.1), a = FitParam(2.0, lower_limit=1.7, upper_limit=2.2)) + AsConvolution(lp_model, domain = collect(range(0, 2, 500)))(DeltaLine(K = FitParam(1.0E-5, upper_limit=0.1), E = FitParam(6.35, frozen=true, lower_limit=6.0, upper_limit=7.0)))
 
 domain = collect(range(1, 50, 500))
 
@@ -114,10 +114,10 @@ plot(domain[1:end-1], output, xscale=:log10, yscale=:log10)
 
 # always use the ISCO
 model.rin_1.frozen = true
-model.rout_1.frozen = true
+# model.rout_1.frozen = true
 model.E₀_1.frozen = true
 
-model.a_1.frozen = true
+# model.a_1.frozen = true
 # model.θ_1.frozen = true
 
 # model.logξ_1.frozen = true
@@ -126,15 +126,15 @@ model.a_1.frozen = true
 
 # make sure the datasets from the same observatory are grouped together
 # else the AutoCache will trigger re-eval as the domain has changed, even through the model parameters will all be the same
-datasets = FittableMultiDataset(
-    xmm, nustar_a, nustar_b
-)
-models = FittableMultiModel((model for _ in datasets.d)...)
+# datasets = FittableMultiDataset(
+#     xmm, nustar_a, nustar_b
+# )
+# models = FittableMultiModel((model for _ in datasets.d)...)
 
-prob = FittingProblem(models, datasets)
+# prob = FittingProblem(models, datasets)
 
 # just fit to XMM
-# prob = FittingProblem(model, xmm)
+prob = FittingProblem(model, xmm)
 
 # cut off power law
 # bind!(prob, :Γ)
@@ -148,14 +148,14 @@ prob = FittingProblem(models, datasets)
 # bind!(prob, :a_1)
 # bind!(prob, :θ_1)
 # bind!(prob, :Γ_1)
-bind!(prob, :logξ_1)
+# bind!(prob, :logξ_1)
 # bind!(prob, :E_cut_1)
 
 # cutoff powerlaw reflection
-bind!(prob, :Γ_1)
-bind!(prob, :θ_1)
-bind!(prob, :Γ_2)
-bind!(prob, :Ecut_1)
+# bind!(prob, :Γ_1)
+# bind!(prob, :θ_1)
+# bind!(prob, :Γ_2)
+# bind!(prob, :Ecut_1)
 
 # push!(prob.bindings, [1 => 2, 1 => 8, 2 => 2, 2 => 8, 3 => 2, 3 => 8, 4 => 2, 4 => 8, 5 => 2, 5 => 8, 6 => 2, 6 => 8, 7 => 2, 7 => 8, 8 => 2, 8 => 8, 9 => 2, 9 => 8]) # <-- this does not work (was for un-merged data sets)
 
@@ -179,12 +179,25 @@ end
 # create data files for plots that can be rendered in Veusz for presentation
 # note that the "pm" column names should be renamed "+-" for Veusz to interpret them as error bars
 # this is a bit long winded and should be made more general
-function output_result(ds, result, bin_factor, file_path)
+function output_result(ds, result, zero_index, spin_index, bin_factor, file_path)
     ds_x = SpectralFitting.plotting_domain(ds)
     ds_x_err = SpectralFitting.bin_widths(ds) ./ 2
     ds_data = result.objective
     ds_data_err = sqrt.(result.variance)
-    ds_model = invoke_result(result, result.u)
+    ds_model = copy(invoke_result(result, result.u))
+
+    # remove line
+    tmp = result.u[zero_index]
+    result.u[zero_index] = 0.0
+    ds_model_no_line = copy(invoke_result(result, result.u))
+    result.u[zero_index] = tmp
+
+    # zero spin line
+    tmp = result.u[spin_index]
+    result.u[spin_index] = 0.0
+    ds_model_no_spin = copy(invoke_result(result, result.u))
+    result.u[spin_index] = tmp
+
     ds_residuals = (ds_data .- ds_model) ./ ds_data_err
     ds_residuals_err = ones(length(ds_residuals))
     # cosmetic averaging
@@ -197,28 +210,41 @@ function output_result(ds, result, bin_factor, file_path)
     ds_data_err_binned = []
     ds_model_tot = 0.0
     ds_model_binned = []
+    ds_model_no_line_tot = 0.0
+    ds_model_no_line_binned = []
+    ds_model_no_spin_tot = 0.0
+    ds_model_no_spin_binned = []
     for i in 1:length(ds_x)
         n = n + 1
         ds_x_tot += ds_x[i]
         ds_data_tot += ds_data[i]
         ds_data_err_tot += ds_data_err[i]^2
         ds_model_tot += ds_model[i]
+        ds_model_no_line_tot += ds_model_no_line[i]
+        ds_model_no_spin_tot += ds_model_no_spin[i]
         if (i % bin_factor == 0) || (i == length(ds_x))
             push!(ds_x_binned, ds_x_tot / n)
             push!(ds_data_binned, ds_data_tot / n)
             push!(ds_data_err_binned, sqrt(ds_data_err_tot) / n)
             push!(ds_model_binned, ds_model_tot / n)
+            push!(ds_model_no_line_binned, ds_model_no_line_tot / n)
+            push!(ds_model_no_spin_binned, ds_model_no_spin_tot / n)
             n = 0
             ds_x_tot = 0.0
             ds_data_tot = 0.0
             ds_data_err_tot = 0.0
             ds_model_tot = 0.0
+            ds_model_no_line_tot = 0.0
+            ds_model_no_spin_tot = 0.0
         end
     end
     ds_residuals_binned = (ds_data_binned .- ds_model_binned) ./ ds_data_err_binned
     ds_residuals_err_binned = ones(length(ds_residuals_binned))
-    ds_ratio = ds_data_binned ./ ds_model_binned
-    ds_ratio_err = ds_data_err_binned ./ ds_model_binned
+    ds_ratio = ds_data_binned ./ ds_model_no_line_binned
+    ds_ratio_err = ds_data_err_binned ./ ds_model_no_line_binned
+    ds_model_ratio = ds_model_binned ./ ds_model_no_line_binned
+    ds_no_spin_ratio = ds_model_no_spin_binned ./ ds_model_no_line_binned
+    ds_no_spin_ratio = (ds_no_spin_ratio .- 1.0) .* (maximum(ds_model_ratio) - 1.0) / (maximum(ds_no_spin_ratio) - 1.0) .+ 1.0
 
     df = DataFrame(
         ds_e = ds_x_binned,
@@ -228,15 +254,17 @@ function output_result(ds, result, bin_factor, file_path)
         ds_residuals = ds_residuals_binned,
         ds_residuals_pm = ds_residuals_err_binned,
         ds_ratio = ds_ratio,
-        ds_ratio_pm = ds_ratio_err
+        ds_ratio_pm = ds_ratio_err,
+        ds_model_ratio = ds_model_ratio,
+        ds_no_spin_ratio = ds_no_spin_ratio
     )
-    custom_header = "ds_e,ds_spec,+-,ds_model,ds_residuals,+-,ds_ratio,+-"
+    custom_header = "ds_e,ds_spec,+-,ds_model,ds_residuals,+-,ds_ratio,+-,model_ratio,no_spin"
     open(file_path, "w") do f
         println(f, custom_header)
         CSV.write(f, df, append=true, header=false)
     end
 end
 
-output_result(xmm, result[1], 10, "presentation/spin_results_xmm.csv")
-output_result(nustar_a, result[2], 10, "presentation/spin_results_nustar_a.csv")
-output_result(nustar_b, result[3], 10, "presentation/spin_results_nustar_b.csv")
+output_result(xmm, result[1], 1, 2, 1, "presentation/spin_results_xmm.csv")
+# output_result(nustar_a, result[2], 10, "presentation/spin_results_nustar_a.csv")
+# output_result(nustar_b, result[3], 10, "presentation/spin_results_nustar_b.csv")

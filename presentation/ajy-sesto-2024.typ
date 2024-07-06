@@ -99,20 +99,18 @@
 #polylux-slide[
   == Spin
 
-  #side-by-side[
+  #side-by-side(columns: (1fr, 1fr))[
     #figure(
       image("disc_a_0.svg", width: 60%),
-      // caption: [$a = 0$ static]
     )
     #figure(
       image("disc_a_0_998.svg", width: 60%),
-      // caption: [$a = 0.998$ maximally spinning]
     )
   ][
-    - The spin of the Black Hole (BH) determines the Innermost Stable Circular Orbit (ISCO)
-    - Static BH with $a = 0$ has ISCO at $6 r_g$
-    - Maximally spinning BH with $a = 0.998$, has ISCO at $1.235 r_g$
-    - More extreme velocities and stronger gravitational redshift experienced at higher spins
+    - Spin of the Black Hole (BH) determines the Innermost Stable Circular Orbit (ISCO)
+    - Static BH, $a = 0$, $"ISCO" = 6 r_g$
+    - Maximally spinning BH, $a = 0.998$, $"ISCO" = 1.235 r_g$
+    - Higher spin $=>$ more extreme velocities, stronger gravitational redshift $=>$ broader iron line
   ]
 ]
 
@@ -120,7 +118,10 @@
 #polylux-slide[
   == Results
 
-  Show the results
+  #figure(
+    image("spin_results.svg", width: 60%),
+  )
+  Representative fit to _XMM-Newwton_ data, $a = 0.998$ and $a = 0$ models.
 ]
 
 // Slide 8
