@@ -138,7 +138,10 @@
   // some nice renders of disc images showing the eclipsing of the inner parts of the disc at it thickens
 ]
 
+// another slide showing cross sections and self-consistent lamp post illumination model
+
 // Slide 9
+// include a contour plot if possible
 #polylux-slide[
   == Results
 
@@ -195,6 +198,13 @@
 #polylux-slide[
   == Conclusions
 
-  - Summarise the results
-  - Future work
+  - We are now able to fit data with more realistic disc models
+    - Arbitrary disc geometry
+    - Arbitrary corona geometry
+    - Arbitrary spacetime geometry
+  - Can convolve with realistic disc reflection spectra
+    - `reflionx`, `xillver`, or any other model
+  - We can also do this with timing analysis
+    - Not _quite_ ready in time for this talk
+  - We are very happy to collaborate if you are working on anything where you think this could be helpful
 ]
