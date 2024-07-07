@@ -130,22 +130,35 @@
   == Thick discs
 
   - Traditionally model a razor thin discs defined by $theta = pi/2$ as an approximation to a realistic disc with some finite thickness
-  - We can model a Shakura & Sunyaev (1973) disc with a finite thickness, including the relativistic effects considered by Page & Thorne (1974)
+  - We can model a Shakura & Sunyaev (1973) disc of finite thickness, including the relativistic effects (Page & Thorne, 1974)
   - Extends work of Taylor & Reynolds (2018)
-  - In principle we can have arbitrary spacetime and corona geometries (see later)
+  - In principle we can have arbitrary spacetime and corona geometries (Abdikamalov et al. 2020; see later)
+  - As a proof of concept we fit one _XMM_ dataset with a thick disc of Eddington fraction $eta$ self-consistently illuminated by a lamp post corona at height $h$ around a BH of spin $a$.
 
   // include figure of edge-on plot showing change in thickness with Eddington fractions
   // some nice renders of disc images showing the eclipsing of the inner parts of the disc at it thickens
+  // ideally would, of course, fit all data
 ]
 
 // another slide showing cross sections and self-consistent lamp post illumination model
 
 // Slide 9
 // include a contour plot if possible
+// also include fit parameters and error bars
 #polylux-slide[
   == Results
 
-  Show the results
+  #side-by-side(columns: (1fr, 1fr))[
+    #figure(
+      image("thick_disc.svg", width: 100%),
+    )
+  ][
+    #figure(
+      image("thick_disc_contours.svg", width: 85%)
+    )
+  ]
+
+  Thick disc fit. By eye looks the same as thin disk! However, combining _XMM_ and _NuSTAR_ data will provide stronger constraints.
 ]
 
 // Slide 10

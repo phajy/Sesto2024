@@ -244,8 +244,9 @@ end
 # 1, 2, and 3σ  corresponds to 68%, 95%, and 99.7% confidence intervals
 # contour_levels = [2.30, 6.18, 11.83]
 # corresponds to 68%, 90%, 99% confidence intervals - this is the XSPEC default
-contour_levels = [2.30, 4.61, 9.21]
+contour_levels = [0, 2.30, 4.61, 9.21]
 # contour_labels = ["68%", "90%", "99%"]
 
-contour(h_values, η_values, Δχ², levels=contour_levels, xlabel="h", ylabel="η", title="Δχ² Contour Plot", xrange=(1.0, 4.5), yrange=(0.01, 0.3), colorbar=false, linecolor=[:blue, :green, :red])
+contour(h_values, η_values, Δχ², levels=contour_levels, xlabel="h", ylabel="η", title="Δχ² Contour Plot", xrange=(1.1, 4.0), yrange=(0.01, 0.3), colorbar=false, color=[:green, :orange, :red], linecolor=[:black], fill=true)
 scatter!([best_h], [best_η], marker=:circle, markersize=5, color=:red, label="")
+savefig("presentation/thick_disc_contours.svg")
