@@ -115,6 +115,7 @@
 ]
 
 // Slide 7
+// Note that the features of the broad line are indicative of the sorts of things that can constrain models of discs, spacetimes, etc., especially when combined with NuSTAR data to constrain the continuum and Compton hump
 #polylux-slide[
   == Results
 
