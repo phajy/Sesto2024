@@ -161,15 +161,13 @@ function tabulate_emissivity_profile(a_range, h_range; r_max = 150.0, n_radii = 
         m = KerrMetric(1.0, a)
         d = ThinDisc(0.0, Inf)
         radii = Gradus.Grids._inverse_grid(Gradus.isco(m) + 1e-2, r_max, n_radii) |> collect
-        if h < 0.5 + Gradus.inner_radius(m)
-            DiscProfileGrid(radii, zeros(eltype(radii), size(radii)))
-        else
-            prof = @time emissivity_profile(m, d, LampPostModel(h = h), n_samples = 2000)
-            ems = emissivity_at.((prof,), radii)
-            DiscProfileGrid(radii, ems)
-        end
+        min_h = 0.5 + Gradus.inner_radius(m)
+        new_h = max(h, min_h)
+        prof = @time emissivity_profile(m, d, LampPostModel(h = new_h), n_samples = 2000)
+        ems = emissivity_at.((prof,), radii)
+        DiscProfileGrid(radii, ems)
     end
-    vals = [_wrapper(a, h) for a in a_range, h in h_range]
+    vals::Vector{DiscProfileGrid{Vector{Float64}}} = [_wrapper(a, h) for a in a_range, h in h_range]
     interp = Gradus.MultilinearInterpolator{2}(vals)
     DiscProfileWrapper((a_range, h_range), vals, interp)
 end
@@ -189,13 +187,11 @@ function tabulate_emissivity_profile(
         m = KerrMetric(1.0, a)
         d = ShakuraSunyaev(m; eddington_ratio = η)
         radii = Gradus.Grids._inverse_grid(Gradus.isco(m) + 1e-2, r_max, n_radii) |> collect
-        if h < 0.5 + Gradus.inner_radius(m)
-            DiscProfileGrid(radii, zeros(eltype(radii), size(radii)))
-        else
-            prof = @time emissivity_profile(m, d, LampPostModel(h = h), n_samples = 3000)
-            ems = emissivity_at.((prof,), radii)
-            DiscProfileGrid(radii, ems)
-        end
+        min_h = 0.5 + Gradus.inner_radius(m)
+        new_h = max(h, min_h)
+        prof = @time emissivity_profile(m, d, LampPostModel(h = new_h), n_samples = 2000)
+        ems = emissivity_at.((prof,), radii)
+        DiscProfileGrid(radii, ems)
     end
     vals = [_wrapper(a, h, η) for a in a_range, h in h_range, η in η_range]
     interp = Gradus.MultilinearInterpolator{3}(vals)
