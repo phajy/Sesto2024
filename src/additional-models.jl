@@ -251,8 +251,8 @@ end
 
 function SpectralFitting.invoke!(output, domain, model::LampPostThickDisc)
     grid = model.table.table((model.a, model.θ, model.η))
-    rmin = if model.rin < grid.r_grid[1]
-        grid.r_grid[1]
+    rmin = if model.rin < grid.r_grid[4]
+        grid.r_grid[4]
     else
         model.rin
     end
