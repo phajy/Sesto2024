@@ -226,15 +226,23 @@ best_η = result.u[5]
 h_values = collect(1.1:0.1:4.5)
 η_values = collect(0.01:0.025:0.3)
 Δχ² = zeros(Float64, length(η_values), length(h_values))
-for (i, h) in enumerate(h_values)
-    for (j, η) in enumerate(η_values)
-        println("Fitting h = $h, η = $η")
-        model.h_1.value = h
-        model.h_1.frozen = true
-        model.η_1.value = η
-        model.η_1.frozen = true
 
-        result = fit(prob, LevenbergMarquadt(), x_tol=1e-4, max_iter=100)
+# copy the model, one for each thread
+models = [copy(model) for i in 1:Threads.nthreads()]
+for (i, h) in enumerate(h_values)
+    Threads.@threads for j in 1:length(η_values)
+        η = η_values[j]
+        _model = models[Threads.threadid()]
+
+        println("Fitting h = $h, η = $η")
+        _model.h_1.value = h
+        _model.h_1.frozen = true
+        _model.η_1.value = η
+        _model.η_1.frozen = true
+
+        _prob = FittingProblem(_model, xmm)
+
+        result = fit(_prob, LevenbergMarquadt(), x_tol=1e-4, max_iter=100)
         Δχ²[j, i] = sum(result.χ2) - best_stat
         println("Δχ² = $(Δχ²[j, i])")
     end
