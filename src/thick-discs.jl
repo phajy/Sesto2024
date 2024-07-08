@@ -67,7 +67,7 @@ else
     jldopen(LAMP_POST_PROFILE_PATH, "w"; compress=true) do f
         f["lamp_post"] = prof_wrap
     end
-end
+end ;
 
 # Set up model
 # Note there are other options - see PR #3
@@ -78,14 +78,15 @@ lp_model = LampPostThickDisc(
     θ=FitParam(30.0, lower_limit=5, upper_limit=85),
     E₀=FitParam(6.35),
     a=FitParam(0.998, lower_limit=0.0, upper_limit=0.998),
-    h=FitParam(2.25, lower_limit=1.0, upper_limit=10.0),
+    h=FitParam(7.0, lower_limit=1.0, upper_limit=10.0),
     η=FitParam(0.15),
     # speed up model evaluation about 3 times
     quadrature_points=13,
     n_radii=600,
 )
 
-model = DeltaLine(K=FitParam(1e-5), E=FitParam(6.35, frozen=true)) + PowerLaw(K=FitParam(1e-2)) + AutoCache(lp_model)
+model = DeltaLine(K=FitParam(1e-5), E=FitParam(6.35, frozen=true)) + PowerLaw(K=FitParam(1e-2)) + lp_model
+# model = PowerLaw(K=FitParam(1e-2)) + lp_model
 
 domain = collect(range(1, 50, 500))
 output = invokemodel(domain, model)
