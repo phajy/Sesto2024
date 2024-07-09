@@ -10,6 +10,7 @@ using JLD2
 # for JLD2 compression
 using CodecZlib
 # using Reflionx
+using LaTeXStrings
 using CSV
 using DataFrames
 
@@ -220,20 +221,18 @@ end
 
 output_result(xmm, result[1], 1, 2, 1, "presentation/thick_disc.csv")
 
-# create a contour plot
+# create a contour plot of Eddington fraction versus source height
 best_stat = result.χ2
 best_h = result.u[4]
 best_η = result.u[5]
-h_values = collect(1.1:0.1:4.5)
+h_values = collect(1.1:0.2:3.5)
 η_values = collect(0.01:0.025:0.3)
 Δχ² = zeros(Float64, length(η_values), length(h_values))
 
-# copy the model, one for each thread
-models = [copy(model) for i in 1:Threads.nthreads()]
 for (i, h) in enumerate(h_values)
     Threads.@threads for j in 1:length(η_values)
         η = η_values[j]
-        _model = models[Threads.threadid()]
+        _model = deepcopy(model)
 
         println("Fitting h = $h, η = $η")
         _model.h_1.value = h
@@ -256,6 +255,44 @@ end
 contour_levels = [0, 2.30, 4.61, 9.21]
 # contour_labels = ["68%", "90%", "99%"]
 
-contour(h_values, η_values, Δχ², levels=contour_levels, xlabel="h", ylabel="η", title="Δχ² Contour Plot", xrange=(1.1, 4.0), yrange=(0.01, 0.3), colorbar=false, color=[:green, :orange, :red], linecolor=[:black], fill=true)
-scatter!([best_h], [best_η], marker=:circle, markersize=5, color=:red, label="")
-savefig("presentation/thick_disc_contours.svg")
+contour(h_values, η_values, Δχ², levels=contour_levels, xlabel="Source height h (GM/c²)", ylabel="Eddington fraction η", xrange=(1.1, 3.5), yrange=(0.01, 0.285), colorbar=false, color=[:green, :orange, :red], linecolor=[:black], fill=true)
+scatter!([best_h], [best_η], marker=:star, markersize=16, color=:cyan, label="")
+savefig("presentation/thick_disc_h_eta_contours.svg")
+
+# create a contour plot of spin versus source height
+best_stat = result.χ2
+best_h = result.u[4]
+best_a = result.u[2]
+h_values = collect(1.1:0.2:3.5)
+a_values = collect(0.9:0.01:1.0)
+h_a_Δχ² = zeros(Float64, length(a_values), length(h_values))
+
+for (i, h) in enumerate(h_values)
+    Threads.@threads for j in 1:length(a_values)
+        a = a_values[j]
+        _model = deepcopy(model)
+
+        println("Fitting h = $h, a = $a")
+        _model.h_1.value = h
+        _model.h_1.frozen = true
+        _model.a_1.value = a
+        _model.a_1.frozen = true
+
+        _prob = FittingProblem(_model, xmm)
+
+        result = fit(_prob, LevenbergMarquadt(), x_tol=1e-4, max_iter=100)
+        h_a_Δχ²[j, i] = sum(result.χ2) - best_stat
+        println("Δχ² = $(h_a_Δχ²[j, i])")
+    end
+end
+
+# contour levels for two free parameters
+# 1, 2, and 3σ  corresponds to 68%, 95%, and 99.7% confidence intervals
+# contour_levels = [2.30, 6.18, 11.83]
+# corresponds to 68%, 90%, 99% confidence intervals - this is the XSPEC default
+contour_levels = [0, 2.30, 4.61, 9.21]
+# contour_labels = ["68%", "90%", "99%"]
+
+contour(h_values, a_values, h_a_Δχ², levels=contour_levels, xlabel="Source height h (GM/c²)", ylabel="Black hole spin a", xrange=(1.1, 3.5), yrange=(0.9, 1), colorbar=false, color=[:green, :orange, :red], linecolor=[:black], fill=true)
+scatter!([best_h], [best_a], marker=:star, markersize=16, color=:cyan, label="")
+savefig("presentation/thick_disc_h_a_contours.svg")
