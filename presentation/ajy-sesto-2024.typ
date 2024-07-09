@@ -1,26 +1,29 @@
-// Get Polylux from the official package repository
-#import "@preview/polylux:0.3.1": *
-
-// Make the paper dimensions fit for a presentation and the text larger
-#set page(paper: "presentation-16-9")
-#set text(size: 25pt)
-
+// Sesto 2024 presentation
 // About 15 or so slides is ideal for the time available
 // i.e., 15 minutes plus 5 minutes for questions
 
+#import "@preview/polylux:0.3.1": *
+#import themes.university: *
+
+#show: university-theme.with(
+  short-author: "Andrew Young",
+  short-title: "Disc, corona, and spacetime models",
+  short-date: "Sesto Workshop - July 2024",
+)
+
 // Slide 1
-#polylux-slide[
-  #align(horizon + center)[
-    = Fitting realistic disc, corona, and \ spacetime models
-
-    Dr Andrew Young \ University of Bristol
-
-    With thanks to Fergus Baker, \ Jiachen Jiang & Wiktoria Tarnopolska
-  ]
-]
+// Title slide
+#title-slide(
+  authors: ("Andrew Young and Fergus Baker"),
+  title: "Disc, corona, and spacetime models",
+  subtitle: "The flexibility to experiment with more realistic models",
+  date: "July 2024",
+  institution-name: "University of Bristol",
+  logo: image("uob-logo.png", width: 60mm)
+)
 
 // Slide 2
-#polylux-slide[
+#slide[
   == Introduction
 
   - Disc reflection and iron lines
@@ -36,7 +39,7 @@
 
 // Slide ?
 // add one of the standard figures to the right - e.g., the NASA accretion disc artist's impression (we should probably make a more realistic version at some point)
-#polylux-slide[
+#slide[
   == Questions...
 
   - What is the accretion disc geometry?
@@ -50,7 +53,7 @@
 
 // Slide 3
 // include figure of reflection spectrum
-#polylux-slide[
+#slide[
   == Reflection spectroscopy
 
   - Accretion disc is illuminated by X-rays
@@ -64,7 +67,7 @@
 
 // Slide 4
 // nice figure showing some ray tracing from an extended corona above the disc
-#polylux-slide[
+#slide[
   == Calculating iron line profiles
 
   #side-by-side[
@@ -79,8 +82,10 @@
 
 ]
 
+// historic slide showing Fabian calculations and ASCA result - point out that thin disc, Sch / Kerr spacetime, power law emissivity adequate to describe data
+
 // Slide 5
-#polylux-slide[
+#slide[
   == Ratio of _XMM_ and _NuSTAR_ data to power law model
 
   // Describe the data we'll be using
@@ -96,7 +101,7 @@
 // Slide 6
 // nice figure showing how disc image with changing spin for Kerr metric and corresponding line profile
 // could replace one of the figures with an image showing contours of the ISCO as a function of a
-#polylux-slide[
+#slide[
   == Spin
 
   #side-by-side(columns: (1fr, 1fr))[
@@ -116,17 +121,17 @@
 
 // Slide 7
 // Note that the features of the broad line are indicative of the sorts of things that can constrain models of discs, spacetimes, etc., especially when combined with NuSTAR data to constrain the continuum and Compton hump
-#polylux-slide[
+#slide[
   == Results
 
   #figure(
     image("spin_results.svg", width: 60%),
   )
-  Representative fit to _XMM-Newwton_ data, $a = 0.998$ and $a = 0$ models.
+  Representative fit to _XMM-Newton_ data, $a = 0.998$ and $a = 0$ models.
 ]
 
 // Slide 8
-#polylux-slide[
+#slide[
   == Thick discs
 
   - Traditionally model a razor thin discs defined by $theta = pi/2$ as an approximation to a realistic disc with some finite thickness
@@ -141,11 +146,27 @@
 ]
 
 // another slide showing cross sections and self-consistent lamp post illumination model
+#slide[
+  == Thick disc model
+
+  #figure(
+    image("disc_profile_a_0.svg", width: 60%),
+  )
+  Example cross section through BH and disc for $a = 0$. Lamppost is at arbitrary height. Disc thickness increases with Eddington fraction.
+  // and decreases with spin
+]
+
+#slide[
+  == Thick disc images
+  
+  Thicker discs can obscure their inner regions
+  // sledging down the potential well
+]
 
 // Slide 9
 // include a contour plot if possible
 // also include fit parameters and error bars
-#polylux-slide[
+#slide[
   == Results
 
   #figure(
@@ -155,16 +176,18 @@
   Thick disc fit. By eye looks the same as thin disk! However, combining _XMM_ and _NuSTAR_ data will provide stronger constraints.
 ]
 
-#polylux-slide[
-  == Results
+#slide[
+  == Preliminary results
 
   #side-by-side(columns: (1fr, 1fr))[
     #figure(
       image("thick_disc_h_eta_contours.svg", width: 100%),
+      // note the degeneracy - a higher source height requires higher Eddington fraction to intercept more photons closer to the horizon
     )
   ][
     #figure(
       image("thick_disc_h_a_contours.svg", width: 100%)
+      // high spin seems robustly required with little degeneracy; high source height ruled out because significant illumination of very innermost regions is required; see vertical "tail" in contours above
     )
   ]
 
@@ -173,7 +196,7 @@
 
 
 // Slide 10
-#polylux-slide[
+#slide[
   == Corona parameters
 
   - Describe the model
@@ -181,7 +204,7 @@
 ]
 
 // Slide 11
-#polylux-slide[
+#slide[
   == Results
 
   Show the results
@@ -191,7 +214,7 @@
 ]
 
 // Slide 12
-#polylux-slide[
+#slide[
   == Deformation parameters
 
   - Models typically restricted to Schwarzschild or Kerr for simplicity
@@ -203,7 +226,7 @@
 ]
 
 // Slide 13
-#polylux-slide[
+#slide[
   == Results
 
   - We can build on the work of, e.g., Tripathi et al. (2019, 2021), Abdikamalov et al. (2020), Jiang et al. (2022)
@@ -219,7 +242,7 @@
 // ]
 
 // Slide 15
-#polylux-slide[
+#slide[
   == Conclusions
 
   - We are now able to fit data with more realistic disc models
