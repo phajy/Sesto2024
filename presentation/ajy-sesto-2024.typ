@@ -148,18 +148,29 @@
 #polylux-slide[
   == Results
 
-  #side-by-side(columns: (1fr, 1fr))[
-    #figure(
-      image("thick_disc.svg", width: 100%),
-    )
-  ][
-    #figure(
-      image("thick_disc_contours.svg", width: 85%)
-    )
-  ]
+  #figure(
+    image("thick_disc.svg", width: 50%),
+  )
 
   Thick disc fit. By eye looks the same as thin disk! However, combining _XMM_ and _NuSTAR_ data will provide stronger constraints.
 ]
+
+#polylux-slide[
+  == Results
+
+  #side-by-side(columns: (1fr, 1fr))[
+    #figure(
+      image("thick_disc_h_eta_contours.svg", width: 100%),
+    )
+  ][
+    #figure(
+      image("thick_disc_h_a_contours.svg", width: 100%)
+    )
+  ]
+
+  This simple model is consistent with low source height, $h approx 2 r_g$ few per cent of Eddington, $eta approx 4%$, high spin, $a approx 0.94$.
+]
+
 
 // Slide 10
 #polylux-slide[
@@ -201,11 +212,11 @@
 ]
 
 // Slide 14
-#polylux-slide[
-  == Reverberation
+// #polylux-slide[
+//   == Reverberation
 
-  - Perhaps for the future?
-]
+//   - Perhaps for the future?
+// ]
 
 // Slide 15
 #polylux-slide[
