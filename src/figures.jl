@@ -3,7 +3,7 @@
 using Gradus
 using Plots, LaTeXStrings
 
-# Spin
+# Spin plots
 
 # High spin
 m = KerrMetric(M=1.0, a=0.998)
