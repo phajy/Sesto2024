@@ -132,6 +132,25 @@ function LampPostLineProfile(
     )
 end
 
+function Base.copy(m::LampPostThickDisc)
+    table = Gradus.CunninghamTransferTable(m.table.table.params, m.table.table.grids)
+    setup = Gradus.IntegrationSetup(
+        m.table.setup.h,
+        m.table.setup.time,
+        m.table.setup.integrand,
+        m.table.setup.pure_radial,
+        m.table.setup.quadrature_rule,
+        deepcopy(m.table.setup.index_cache),
+        m.table.setup.g_grid_upscale,
+        m.table.setup.n_radii,
+    )
+    profile = deepcopy(m.table.profile)
+    typeof(m)(
+        (; setup = setup, profile = profile, table = table),
+        (copy(getproperty(m, f)) for f in fieldnames(typeof(m))[2:end])...,
+    )
+end
+
 function SpectralFitting.invoke!(output, domain, model::LampPostLineProfile)
     grid = model.table.table((model.a, model.θ))
     rmin = if model.rin < grid.r_grid[1]
