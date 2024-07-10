@@ -244,7 +244,7 @@ g✶s = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 0.95]
 
 data1, radial1, minor_radial1 = calculate_disc_parameterization(m, x, d)
 
-d2 = ShakuraSunyaev(m)
+d2 = ShakuraSunyaev(m, eddington_ratio = 0.4)
 data2, radial2, minor_radial2 = calculate_disc_parameterization(m, x, d2, β₀ = 1)
 
 begin
