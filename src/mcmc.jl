@@ -88,7 +88,7 @@ lp_model = LampPostThickDisc(
     n_radii=600,
 )
 
-model = DeltaLine(K=FitParam(1e-5), E=FitParam(6.35, frozen=true)) + PowerLaw(K=FitParam(1e-2)) + AutoCache(lp_model)
+model = DeltaLine(K=FitParam(1e-5), E=FitParam(6.35, frozen=true)) + PowerLaw(K=FitParam(1e-2)) + lp_model
 
 domain = collect(range(1, 50, 500))
 output = invokemodel(domain, model)
@@ -133,28 +133,31 @@ plotresult(
 
 # set up MCMC fit
 @model function mcmc_model(domain, objective, variance, f)
-    K_1 ~ truncated(Normal(1e-5, 5e-6); lower = 0)
-    a_1 ~ truncated(Normal(0.998, 0.1); lower = 0, upper = 1)
+    K_1 ~ truncated(Normal(1e-4, 5e-5); lower = 0)
+    a_1 ~ truncated(Normal(0.94, 0.1); lower = 0, upper = 1)
     θ_1 ~ Normal(35, 10)
-    h_1 ~ truncated(Normal(4.0, 0.4); lower = 1, upper = 10)
-    η_1 ~ truncated(Normal(0.1, 0.05); lower = 0, upper = 1)
-    K_2 ~ truncated(Normal(0.01, 0.005); lower = 0)
+    h_1 ~ truncated(Normal(3.0, 1.0); lower = 1, upper = 10)
+    η_1 ~ truncated(Normal(0.05, 0.05); lower = 0, upper = 0.3)
+    K_2 ~ truncated(Normal(0.01, 0.0005); lower = 0)
     a_2 ~ Normal(2.0, 0.2)
-    K_3 ~ truncated(Normal(1e-5, 5e-6); lower = 0)
+    K_3 ~ truncated(Normal(8e-6, 5e-6); lower = 0)
 
-    pred = f(domain, [K_1, a_1, θ_1, h_1, η_1, K_2, a_2, K_3])
+    pred = f[Threads.threadid()](domain, [K_1, a_1, θ_1, h_1, η_1, K_2, a_2, K_3])
     return objective ~ MvNormal(pred, sqrt.(variance))
 end
 
+configs = [FittingConfig(FittingProblem(copy(model) => xmm)) for _ in 1:Threads.nthreads()]
 config = FittingConfig(FittingProblem(model => xmm))
 mm = mcmc_model(
     make_model_domain(ContiguouslyBinned(), xmm),
     make_objective(ContiguouslyBinned(), xmm),
     make_objective_variance(ContiguouslyBinned(), xmm),
     # _f_objective returns a function used to evaluate and fold the model through the data
-    SpectralFitting._f_objective(config),
+    SpectralFitting._f_objective.(configs),
 )
 
-chain = sample(mm, NUTS(), 5_000)
+chain = sample(mm, NUTS(), MCMCThreads(), 20, 2; discard_initial = 10)
 
 # corner plot should be compared with the contour plot generated separately
+using StatsPlots
+plot(chain)
