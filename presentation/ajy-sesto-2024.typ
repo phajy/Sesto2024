@@ -102,7 +102,7 @@
     image("powerlaw_fit.svg", width: 60%),
   )
 
-  Want to fit data. Here's are nice "clean" datasets for MCG-6-30-15. Broad iron K$alpha$ line $~6.4$ keV and Compton hump $~20-30$ keV.
+  Want to fit data. Here's are some nice "clean" datasets for MCG-6-30-15. Broad iron K$alpha$ line $~6.4$ keV and Compton hump $~20-30$ keV.
 ]
 
 // Slide 6
@@ -145,26 +145,18 @@
   - We can model a (Shakura & Sunyaev 1973; Novikov & Thorne 1973; Page & Thorne, 1974) with different accretion rates, $dot(m)$
   - Extends the work of, e.g., Taylor & Reynolds (2018)
   // - In principle we can have arbitrary spacetime and corona geometries (e.g., Abdikamalov et al. 2020; see later)
-  - As a proof of concept we again fit one _XMM_ dataset with a thick disc of Eddington fraction $eta$ self-consistently illuminated by a lamp post corona at height $h$ around a black hole of spin $a$.
+  - As a proof of concept we again fit one _XMM_ dataset with a thick disc of Eddington fraction $accent(M, dot) / accent(M_"Edd", dot)$ self-consistently illuminated by a lamp post corona at height $h$ around a black hole of spin $a$.
   - We should really fit the combined _XMM_ and _NuSTAR_ data to get stronger constraints (not ready yet; in preparation)
-  // but this shows you the flavour of what we can do
-
-  // some nice renders of disc images showing the eclipsing of the inner parts of the disc at it thickens
 ]
 
-// note thin discs not good for sledging!
-
-// another slide showing cross sections and self-consistent lamp post illumination model
 #slide[
   == Thick disc model
 
   #figure(
     image("disc_profile_a_0.svg", width: 55%),
   )
-  Cross section through BH and disc for $a = 0$. Lamp post is at arbitrary height, $h$. Disc thickness increases with Eddington fraction, $eta$. Disc illumination is calculated self-consistently.
-  // and decreases with spin
-  // note we can have _any_ geometry
-]
+  Cross section through BH and disc for $a = 0$. Lamp post is at arbitrary height, $h$. Disc thickness increases with Eddington fraction. Illumination is calculated self-consistently, not assumed to be a power-law.
+ ]
 
 #slide[
   == Sledging down the potential well
@@ -173,9 +165,17 @@
     image("transfer-function.parameterization.svg", width: 100%),
   )
 
-  Thicker discs can obscure their inner regions
-  // sledging down the potential well
-  // increase inclination angle and larger eddington fraction to make the eclipsing even more obvious; perhaps lower spin too?
+  A thick disc (b) is much better for sledging down the potential well than a razor thin disc (a). At higher inclinations thick discs eclipse their inner regions, including the ISCO (thick black line).
+]
+
+#slide[
+  == Self-eclipsing of the disc
+
+  #figure(
+    image("datum-plane.svg", width: 60%),
+  )
+
+  More important at high inclination angles or for very thick discs (may be relevant, e.g., for tidal disruption events, super-Eddington sources).
 ]
 
 // Slide 9
