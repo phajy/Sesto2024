@@ -23,19 +23,19 @@
 )
 
 // Slide 2
-#slide[
-  == Introduction
+// #slide[
+//   == Overview
 
-  - Disc reflection and iron lines
-  - Calculating line profiles for different geometries
-  - _XMM-Newton_ and _NuSTAR_ observations of MCG--6-30-15
-  - Measuring black holes spin
-  - Thick discs with different Eddington fractions
-  - Extended corona geometries
-  - Testing the Kerr hypothesis by fitting "deformation parameters"
-  - X-ray timing, light echoes, and reverberation
-  - The future (_XRISM_, _Athena_, ...)
-]
+//   - Disc reflection and iron lines
+//   - Calculating line profiles for different geometries
+//   - _XMM-Newton_ and _NuSTAR_ observations of MCG--6-30-15
+//   - Measuring black holes spin
+//   - Thick discs with different Eddington fractions
+//   - Extended corona geometries
+//   - Testing the Kerr hypothesis by fitting "deformation parameters"
+//   - X-ray timing, light echoes, and reverberation
+//   - The future (_XRISM_, _Athena_, ...)
+// ]
 
 // Slide ?
 // add one of the standard figures to the right - e.g., the NASA accretion disc artist's impression (we should probably make a more realistic version at some point)
@@ -48,9 +48,42 @@
     - Size, shape, location, velocity structure
   - What is the spacetime geometry?
     - How fast is the black hole spinning?
-    - Is General Relativity an accurate description?
+    - Is General Relativity an accurate description of spacetime?
   - Better data need better models
     - Want fast, flexible models to explore a wide range of possibilities
+]
+
+// accretion overview / history
+// fabian 1988 and then asca plot (?)
+
+#matrix-slide(columns: (2fr, 1fr))[
+  == X-ray fluorescence from the inner disc
+
+  #figure(
+    image("fabian1989.png", width: 100%),
+  )
+  Fabian et al. (1989) $<- 35$ years ago
+][
+  #figure(
+    image("accretion_disk.jpg", height: 90%),
+  )
+  #text(size: 15pt)[Credit: NASA-JPL/Caltech]
+]
+
+#slide[
+  == Disc and corona
+
+  #side-by-side(columns: (4fr, 3fr))[
+    #figure(
+      image("disc_and_reflection.jpg", height: 80%),
+    )
+  ][
+    - Thermal emission from disk
+    - Corona inverse-Compton scatters opt/UV $->$ X-rays
+    - Disk illuminated by X-rays
+    - Produces a back-scattered "reflection" spectrum
+    - Spectrum modified by relativistic effects
+  ]
 ]
 
 // accretion overview / history
@@ -59,15 +92,19 @@
 // Slide 3
 // include figure of reflection spectrum
 #slide[
-  == Reflection spectroscopy in the disc's rest-frame
+  == "Reflection" spectrum in the disc's rest-frame
 
-  - Accretion disc is illuminated by X-rays
-  - These X-rays are reprocessed ("reflected") by the disc
-    - Photoelectrically absorbed (most likely below $~6-7$ keV)
-      - Resulting in fluorescence ($1/3$ of the time for iron)
-      - Ejection of an outer electron
-    - Compton scattered (most likely above $~6-7$ keV)
-  - Resulting reflection spectrum has a strong iron fluorescence line at 6.4 keV and "Compton hump" at $20-30$ keV
+  #side-by-side(columns: (1fr, 1fr))[
+    - Disc illuminated by X-rays
+    - Absorption $->$ fluorescence
+    - Scattering $->$ "Compton hump"
+    - Resulting reflection spectrum has a strong iron fluorescence line at 6.4 keV and the Compton hump is at $20-30$ keV
+    - Ionisation dependent (calculation is for a neutral disc)
+  ][
+    #figure(
+      image("reflection.jpg", width: 100%),
+    )
+  ]
 ]
 // include a figure of a reflection spectrum
 // take from ross, fabian, young  perhaps
@@ -78,25 +115,31 @@
   == Relativistic blurring $->$ broad iron line
 
   #side-by-side[
-    - Reflection spectrum modified by relativistic effects
-    - We use open source package `Gradus.jl`
-    - Fast and flexible
-    - Can specify any disc, corona, spacetime geometry
-    - See Fergus Baker's earlier talk)
+    #figure(
+      image("lineprofiles.ssd.png", width: 100%),
+    )
+    Baker & Young (in prep; Wed. talk)
   ][
-    _Figure here_
-    // or on separate slide
+    - Reflection spectrum modified by relativistic effects
+    - Computed using the fast open source package `Gradus.jl`
+    - Arbitrary disc, corona, spacetime geometries
+    - Figure shows line profiles from thin discs with different black hole spin and disc inclinations
   ]
+]
+
+#slide[
+  == Blurred reflection spectrum
+
+  #figure(
+    image("blurred_reflection.svg", height: 85%),
+  )
 ]
 
 // historic slide showing Fabian calculations and ASCA result - point out that thin disc, Sch / Kerr spacetime, power law emissivity adequate to describe data
 
 // Slide 5
 #slide[
-  == Ratio of _XMM_ and _NuSTAR_ data to power law model
-
-  // Describe the data we'll be using
-  // perhaps make this figure a ratio plot with a wider aspect ratio
+  == MCG--6-30-15: _XMM_ & _NuSTAR_ ratio to power law
 
   #figure(
     image("powerlaw_fit.svg", width: 60%),
@@ -109,7 +152,7 @@
 // nice figure showing how disc image with changing spin for Kerr metric and corresponding line profile
 // could replace one of the figures with an image showing contours of the ISCO as a function of a
 #slide[
-  == Spinnng BH with a thin disc
+  == Model spinning BH with a razor thin disc
 
   #side-by-side(columns: (1fr, 1fr))[
     #figure(
@@ -146,7 +189,7 @@
   - Extends the work of, e.g., Taylor & Reynolds (2018)
   // - In principle we can have arbitrary spacetime and corona geometries (e.g., Abdikamalov et al. 2020; see later)
   - As a proof of concept we again fit one _XMM_ dataset with a thick disc of Eddington fraction $accent(M, dot) / accent(M_"Edd", dot)$ self-consistently illuminated by a lamp post corona at height $h$ around a black hole of spin $a$.
-  - We should really fit the combined _XMM_ and _NuSTAR_ data to get stronger constraints (not ready yet; in preparation)
+  // - We should really fit the combined _XMM_ and _NuSTAR_ data to get stronger constraints (not ready yet; in preparation)
 ]
 
 #slide[
@@ -188,7 +231,7 @@
     image("thick_disc.svg", width: 50%),
   )
 
-  By eye looks the same as thin disk! However, combining _XMM_ and _NuSTAR_ data will provide stronger constraints.
+  By eye looks the same as thin disk! However, even with just the _XMM_ data we can still constrain the accretion flow geometry.
 ]
 
 #slide[
@@ -207,26 +250,26 @@
     )
   ]
 
-  This simple model is consistent with low source height, $h approx 2 r_g$, few per cent of Eddington, $eta approx 4%$, high spin, $a approx 0.94$.
+  Low source height, $h approx 2 r_g$, Eddington fraction $approx 4%$, high spin, $a approx 0.94$. Consistent with results of Jiang et al. (2021).
 ]
 
 // Slide 10
-#slide[
-  == Corona parameters
+// #slide[
+//   == Corona parameters
 
-  - Describe the model
-  - Emissivity
-]
+//   - Describe the model
+//   - Emissivity
+// ]
 
 // Slide 11
-#slide[
-  == Results
+// #slide[
+//   == Results
 
-  Show the results
+//   Show the results
 
   // would be nice to show a plot constraining, e.g., corona height and BH spin, or similar
   // maybe corona size (w x h) and height but that might have to wait until later
-]
+// ]
 
 // Slide 12
 #slide[
@@ -245,6 +288,8 @@
   == Results
 
   - We can build on the work of, e.g., Tripathi et al. (2019, 2021), Abdikamalov et al. (2020), Jiang et al. (2022)
+  - Can have thick disc, self-consistently illuminated, with any spacetime
+  - Will extend to arbitrary corona geometry
 
   // would be nice to show some confidence contours of two deformation parameters :)
   // could note that a major constraint here is the isco which is deformation parameter dependent too
@@ -273,10 +318,10 @@
     - Arbitrary disc geometry
     - Arbitrary corona geometry
     - Arbitrary spacetime geometry
-  - Can easily convolve with realistic disc reflection spectra
+  - Can convolve with realistic disc reflection spectra
     - `reflionx`, `xillver`, or any other model, including high density
-  - We can also do this with timing (lags versus frequency, energy)
-    - Not _quite_ ready in time for this talk
+  - TODO: timing studies (lags versus frequency, energy)
+  - TODO: radiative transfer -- absorption, scattering, and polarisation
   - We are *very happy to collaborate* if this could be useful, or you want a comparison with another code; all our software is open source
   // although work in progress so probably easiest to talk to us, but you can raise an issue on GitHub and we'll respond
 ]
