@@ -161,15 +161,13 @@ function tabulate_emissivity_profile(a_range, h_range; r_max = 150.0, n_radii = 
         m = KerrMetric(1.0, a)
         d = ThinDisc(0.0, Inf)
         radii = Gradus.Grids._inverse_grid(Gradus.isco(m) + 1e-2, r_max, n_radii) |> collect
-        if h < 0.5 + Gradus.inner_radius(m)
-            DiscProfileGrid(radii, zeros(eltype(radii), size(radii)))
-        else
-            prof = @time emissivity_profile(m, d, LampPostModel(h = h), n_samples = 2000)
-            ems = emissivity_at.((prof,), radii)
-            DiscProfileGrid(radii, ems)
-        end
+        min_h = 0.5 + Gradus.inner_radius(m)
+        new_h = max(h, min_h)
+        prof = @time emissivity_profile(m, d, LampPostModel(h = new_h), n_samples = 2000)
+        ems = emissivity_at.((prof,), radii)
+        DiscProfileGrid(radii, ems)
     end
-    vals = [_wrapper(a, h) for a in a_range, h in h_range]
+    vals::Vector{DiscProfileGrid{Vector{Float64}}} = [_wrapper(a, h) for a in a_range, h in h_range]
     interp = Gradus.MultilinearInterpolator{2}(vals)
     DiscProfileWrapper((a_range, h_range), vals, interp)
 end
@@ -189,13 +187,11 @@ function tabulate_emissivity_profile(
         m = KerrMetric(1.0, a)
         d = ShakuraSunyaev(m; eddington_ratio = η)
         radii = Gradus.Grids._inverse_grid(Gradus.isco(m) + 1e-2, r_max, n_radii) |> collect
-        if h < 0.5 + Gradus.inner_radius(m)
-            DiscProfileGrid(radii, zeros(eltype(radii), size(radii)))
-        else
-            prof = @time emissivity_profile(m, d, LampPostModel(h = h), n_samples = 3000)
-            ems = emissivity_at.((prof,), radii)
-            DiscProfileGrid(radii, ems)
-        end
+        min_h = 0.5 + Gradus.inner_radius(m)
+        new_h = max(h, min_h)
+        prof = @time emissivity_profile(m, d, LampPostModel(h = new_h), n_samples = 2000)
+        ems = emissivity_at.((prof,), radii)
+        DiscProfileGrid(radii, ems)
     end
     vals = [_wrapper(a, h, η) for a in a_range, h in h_range, η in η_range]
     interp = Gradus.MultilinearInterpolator{3}(vals)
@@ -255,8 +251,8 @@ end
 
 function SpectralFitting.invoke!(output, domain, model::LampPostThickDisc)
     grid = model.table.table((model.a, model.θ, model.η))
-    rmin = if model.rin < grid.r_grid[1]
-        grid.r_grid[1]
+    rmin = if model.rin < grid.r_grid[4]
+        grid.r_grid[4]
     else
         model.rin
     end
@@ -271,4 +267,56 @@ function SpectralFitting.invoke!(output, domain, model::LampPostThickDisc)
         g_scale = model.E₀,
     )
     output
+end
+
+
+struct JPLineProfile{T} <: AbstractSpectralModel{T,Additive}
+    K::T
+    "Spin"
+    a::T
+    "Observer inclination (degrees off of the spin axis)."
+    θ::T
+    "Lamp post corona height"
+    h::T
+    "Deformation parameters"
+    eps3::T 
+    "Inner radius of the accretion disc."
+    rin::T
+    "Outer radius of the accretion disc."
+    rout::T
+    "Central emission line energy (keV)."
+    E₀::T
+end
+
+function JPLineProfile(;
+    K = FitParam(1.0),
+    a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+    θ = FitParam(45.0, lower_limit = 5.0, upper_limit = 85.0),
+    h = FitParam(5.0, lower_limit = 0.0, upper_limit = 20.0),
+    eps3 = FitParam(0.0, lower_limit = -0.5, upper_limit = 0.5),
+    rin = FitParam(1.0),
+    rout = FitParam(100.0, upper_limit = 100.0),
+    E₀ = FitParam(1.0),
+    kwargs...,
+)
+    JPLineProfile(
+        K,
+        a,
+        θ,
+        h,
+        eps3,
+        rin,
+        rout,
+        E₀,
+    )
+end
+
+function SpectralFitting.invoke!(output, domain, model::JPLineProfile)
+    m = JohannsenPsaltisMetric(promote(1, model.a, model.eps3)...)
+    lp = LampPostModel(promote(model.h, 0.01, 0.0)...)
+    d = ThinDisc(0.0, Inf)
+    prof = emissivity_profile(m, d, lp; n_samples = 1000)
+    x = SVector(promote(0.0, 10_000.0, deg2rad(model.θ), 0.0)...)
+    _, f = Gradus.lineprofile(m, x, d, prof, bins = domain, method = TransferFunctionMethod(), verbose = false, maxrₑ = 400.0, numrₑ = 100, chart = Gradus.chart_for_metric(m, 2x[2]; closest_approach = 1.1), integrator_verbose = false)
+    output .= f[1:end-1]
 end
