@@ -268,3 +268,55 @@ function SpectralFitting.invoke!(output, domain, model::LampPostThickDisc)
     )
     output
 end
+
+
+struct JPLineProfile{T} <: AbstractSpectralModel{T,Additive}
+    K::T
+    "Spin"
+    a::T
+    "Observer inclination (degrees off of the spin axis)."
+    θ::T
+    "Lamp post corona height"
+    h::T
+    "Deformation parameters"
+    eps3::T 
+    "Inner radius of the accretion disc."
+    rin::T
+    "Outer radius of the accretion disc."
+    rout::T
+    "Central emission line energy (keV)."
+    E₀::T
+end
+
+function JPLineProfile(;
+    K = FitParam(1.0),
+    a = FitParam(0.998, lower_limit = 0.0, upper_limit = 0.998),
+    θ = FitParam(45.0, lower_limit = 5.0, upper_limit = 85.0),
+    h = FitParam(5.0, lower_limit = 0.0, upper_limit = 20.0),
+    eps3 = FitParam(0.0, lower_limit = -0.5, upper_limit = 0.5),
+    rin = FitParam(1.0),
+    rout = FitParam(100.0, upper_limit = 100.0),
+    E₀ = FitParam(1.0),
+    kwargs...,
+)
+    JPLineProfile(
+        K,
+        a,
+        θ,
+        h,
+        eps3,
+        rin,
+        rout,
+        E₀,
+    )
+end
+
+function SpectralFitting.invoke!(output, domain, model::JPLineProfile)
+    m = JohannsenPsaltisMetric(promote(1, model.a, model.eps3)...)
+    lp = LampPostModel(promote(model.h, 0.01, 0.0)...)
+    d = ThinDisc(0.0, Inf)
+    prof = emissivity_profile(m, d, lp; n_samples = 1000)
+    x = SVector(promote(0.0, 10_000.0, deg2rad(model.θ), 0.0)...)
+    _, f = Gradus.lineprofile(m, x, d, prof, bins = domain, method = TransferFunctionMethod(), verbose = false, maxrₑ = 400.0, numrₑ = 100, chart = Gradus.chart_for_metric(m, 2x[2]; closest_approach = 1.1), integrator_verbose = false)
+    output .= f[1:end-1]
+end
