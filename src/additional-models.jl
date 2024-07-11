@@ -314,7 +314,7 @@ struct JohannsenPsaltisLampPost{D,T} <: AbstractTableModel{T,Additive}
     "Observer inclination (degrees off of the spin axis)."
     θ::T
     "Deformation parameter"
-    eps::Any
+    eps::T
     "Lamp post corona height"
     h::T
     "Inner radius of the accretion disc."
