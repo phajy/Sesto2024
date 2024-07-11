@@ -377,3 +377,73 @@ function SpectralFitting.invoke!(output, domain, model::JohannsenPsaltisLampPost
     )
     output
 end
+
+struct JohannsenPsaltisFixed{D,T} <: AbstractTableModel{T,Additive}
+    table::D
+    K::T
+    "Spin"
+    a::T
+    "Observer inclination (degrees off of the spin axis)."
+    θ::T
+    "Deformation parameter"
+    eps::T
+    "Power law index"
+    Γ::T
+    "Inner radius of the accretion disc."
+    rin::T
+    "Outer radius of the accretion disc."
+    rout::T
+    "Central emission line energy (keV)."
+    E₀::T
+end
+
+function JohannsenPsaltisFixed(
+    table::Gradus.CunninghamTransferTable;
+    K = FitParam(1.0),
+    a = FitParam(0.998, lower_limit = 0, upper_limit = 1),
+    eps = FitParam(0.0, lower_limit = -1.0, upper_limit = 1.0),
+    θ = FitParam(45.0, lower_limit = 20, upper_limit = 60),
+    Γ = FitParam(3.0, lower_limit = 0.0, upper_limit = 20.0),
+    rin = FitParam(1.0),
+    rout = FitParam(100.0, upper_limit = 100.0),
+    E₀ = FitParam(1.0),
+    kwargs...,
+)
+    # just use anything for the emissivity profile, since we are going to override it during integration anyway
+    setup = integration_setup(
+        r -> r^(-get_value(Γ)),
+        table((get_value(a), get_value(θ), get_value(eps)));
+        kwargs...,
+    )
+    JohannsenPsaltisFixed(
+        (; setup = setup, table = table),
+        K,
+        a,
+        θ,
+        eps,
+        Γ,
+        rin,
+        rout,
+        E₀,
+    )
+end
+
+function SpectralFitting.invoke!(output, domain, model::JohannsenPsaltisFixed)
+    grid = model.table.table((model.a, model.θ, model.eps))
+    rmin = if model.rin < grid.r_grid[4]
+        grid.r_grid[4]
+    else
+        model.rin
+    end
+    Gradus.integrate_lineprofile!(
+        output,
+        model.table.setup,
+        grid,
+        domain;
+        rmin = rmin,
+        rmax = model.rout,
+        pure_radial = r -> r^-(model.Γ),
+        g_scale = model.E₀,
+    )
+    output
+end
