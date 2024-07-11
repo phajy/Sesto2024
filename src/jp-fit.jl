@@ -27,7 +27,7 @@ function read_transfer_path(path)
 end
 
 data_path = "data"
-table = read_transfer_path(joinpath(data_path, "johannsen_transfer_table.jld2"));
+table = read_transfer_path(joinpath(data_path, "johannsen_transfer_table_extended.jld2"));
 
 for grid in table.grids
     replace!(grid.lower_f, NaN => 0.0)
@@ -35,19 +35,23 @@ for grid in table.grids
 end
 
 profile = begin
-    f = jldopen(joinpath(data_path, "johannsen_lamp_post.jld2"), "r")
+    f = jldopen(joinpath(data_path, "johannsen_lamp_post_extended.jld2"), "r")
     prof = f["lamp_post"]
     close(f)
     prof
 end;
 
 
-model = JohannsenPsaltisLampPost(profile, table)
+model1 = JohannsenPsaltisLampPost(profile, table)
+model2 = JohannsenPsaltisFixed(table)
 
-model.a.value = 0.6
-model.eps.value = 0.0
+# model.a.value = 0.6
+# model.eps.value = -1.0
 
 domain = collect(range(0.1, 1.6, 200))
-output = invokemodel(domain, model)
+output1 = invokemodel(domain, model1)
+output2 = invokemodel(domain, model2)
 
-plot!(domain[1:end-1], output)
+plot(domain[1:end-1], output1)
+plot!(domain[1:end-1], output2)
+
