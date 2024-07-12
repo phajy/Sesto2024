@@ -255,7 +255,7 @@ end
 contour_levels = [0, 2.30, 4.61, 9.21]
 # contour_labels = ["68%", "90%", "99%"]
 
-contour(h_values, η_values, Δχ², levels=contour_levels, xlabel="Source height h (GM/c²)", ylabel="Eddington fraction η", xrange=(1.1, 3.5), yrange=(0.01, 0.285), colorbar=false, color=[:green, :orange, :red], linecolor=[:black], fill=true)
+contour(h_values, η_values, Δχ², levels=contour_levels, xlabel="Source height h (GM/c²)", ylabel="Eddington fraction λ", xrange=(1.1, 3.5), yrange=(0.01, 0.285), colorbar=false, color=[:green, :orange, :red], linecolor=[:black], fill=true)
 scatter!([best_h], [best_η], marker=:star, markersize=16, color=:cyan, label="")
 savefig("presentation/thick_disc_h_eta_contours.svg")
 
