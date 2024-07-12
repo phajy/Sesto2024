@@ -1,6 +1,5 @@
 # fitting thin discs with non-Kerr metric
 # MCG--6-30-15 one XMM dataset only for illustrative purposes
-# based on the spin.jl fits
 
 using SpectralFitting
 using Plots
@@ -16,20 +15,63 @@ using DataFrames
 
 include("additional-models.jl")
 
-jp_model = JPLineProfile(a = FitParam(0.4), θ = FitParam(30.0), a13 = FitParam(0.0), eps3 = FitParam(2.0), E₀ = FitParam(6.35, frozen=true))
-domain = collect(range(0.1, 1.6, 200))
+function read_transfer_path(path)
+    if isfile(path)
+        @info "Reading transfer function table from file..."
+        f = jldopen(path, "r")
+        table = f["table"]
+        close(f)
+
+        N = 10
+        a_range = collect(range(0.0, 0.998, N))
+        θ_range = collect(range(20.0, 60.0, N))
+        eps_range = collect(range(-0.5, 3, N))
+        Gradus.CunninghamTransferTable((a_range, θ_range, eps_range), table)
+    else
+        @error "Not a file"
+    end
+end
+
+data_path = "data"
+table = read_transfer_path(joinpath(data_path, "johannsen_transfer_table_extended.jld2"));
+
+for grid in table.grids
+    replace!(grid.lower_f, NaN => 0.0)
+    replace!(grid.upper_f, NaN => 0.0)
+end
+
+profile = begin
+    f = jldopen(joinpath(data_path, "johannsen_lamp_post_extended.jld2"), "r")
+    prof = f["lamp_post"]
+    close(f)
+    prof
+end;
+
+# jp_model = JohannsenPsaltisLampPost(profile, table)
+jp_model = JohannsenPsaltisFixed(table)
+
+jp_model.K.value = 1e-2
+jp_model.a.value = 0.2
+# jp_model.eps.value = 0.0
+jp_model.eps.lower_limit = -0.5
+jp_model.eps.upper_limit = 3.0
+jp_model.E₀.value = 6.35
+# jp_model.Γ.value = 3.0
+# jp_model.h.value = 10.0
+# jp_model.h.lower_limit = 1.0
+jp_model.rout.value = 300.0
+# jp_model.eps.frozen = false
+jp_model.rin.frozen = true
+jp_model.rout.frozen = true
+jp_model.E₀.frozen = true
+# jp_model.Γ.frozen = false
+
+domain = collect(range(1, 10, 200))
 output = invokemodel(domain, jp_model)
+
 plot(domain[1:end-1], output)
 
-model = PowerLaw(a = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.2)) + AsConvolution(jp_model)(DeltaLine(E = FitParam(6.35)))
-
-model.rin_1.frozen = true
-model.rout_1.frozen = true
-
-model
-
 # just fit to XMM data
-data_path = "data"
 spec = joinpath(data_path, "PN_spectrum_grp_0693781301_S003_total.fits")
 back = joinpath(data_path, "PNbackground_spectrum_0693781301_S003_total.fits")
 rmf = joinpath(data_path, "PN_0693781301_S003_total.rmf")
@@ -42,15 +84,14 @@ subtract_background!(xmm)
 normalize!(xmm)
 
 # define problem and fit
+model = DeltaLine(K=FitParam(1e-4), E=FitParam(6.35, frozen=true)) + PowerLaw(K=FitParam(0.1), a = FitParam(2.0, lower_limit = 1.7, upper_limit = 2.2)) + jp_model
+
+output = invokemodel(domain, model)
+plot(domain[1:end-1], output)
+
 prob = FittingProblem(model, xmm)
 
-result = @time fit(prob, LevenbergMarquadt(); verbose=true, x_tol=1e-5, max_iter=100)
-
-
-
-
-
-##### the following will have to be updated once the fitting is working #####
+result = @time fit!(prob, LevenbergMarquadt(); verbose=true, x_tol=1e-7, max_iter=100)
 
 # create data files for plots that can be rendered in Veusz for presentation
 # note that the "pm" column names should be renamed "+-" for Veusz to interpret them as error bars
@@ -141,4 +182,83 @@ function output_result(ds, result, zero_index, spin_index, bin_factor, file_path
     end
 end
 
-# output_result(xmm, result[1], 1, 2, 1, "presentation/jp_disc.csv")
+output_result(xmm, result[1], 1, 4, 1, "presentation/jp_disc.csv")
+
+# create a contour plot 
+best_stat = result.χ2
+best_a = result.u[2]
+best_ϵ = result.u[4]
+a_values = collect(0.5:0.1:1.0)
+ϵ_values = collect(-0.5:0.2:3.0)
+Δχ² = zeros(Float64, length(ϵ_values), length(a_values))
+
+# now we've fit it, freeze the emissivity index
+# model.Γ_1.frozen = true
+
+for (i, a) in enumerate(a_values)
+    Threads.@threads for j in 1:length(ϵ_values)
+        ϵ = ϵ_values[j]
+        _model = deepcopy(model)
+
+        println("Fitting a = $a, ϵ = $ϵ")
+        _model.a_1.value = a
+        _model.a_1.frozen = true
+        _model.eps_1.value = ϵ
+        _model.eps_1.frozen = true
+
+        _prob = FittingProblem(_model, xmm)
+
+        result = fit(_prob, LevenbergMarquadt(), x_tol=1e-4, max_iter=100)
+        Δχ²[j, i] = sum(result.χ2) - best_stat
+        println("Δχ² = $(Δχ²[j, i])")
+    end
+end
+
+# contour levels for two free parameters
+# 1, 2, and 3σ  corresponds to 68%, 95%, and 99.7% confidence intervals
+# contour_levels = [2.30, 6.18, 11.83]
+# corresponds to 68%, 90%, 99% confidence intervals - this is the XSPEC default
+contour_levels = [0, 2.30, 4.61, 9.21]
+# contour_labels = ["68%", "90%", "99%"]
+
+contour(a_values, ϵ_values, Δχ², levels=contour_levels, xlabel="a", ylabel="ϵ", xrange=(0.5, 1.0), yrange=(-0.5, 2.9), colorbar=false, color=[:green, :orange, :red], linecolor=[:black], fill=true)
+# scatter!([best_a], [best_ϵ], marker=:star, markersize=16, color=:cyan, label="")
+scatter!([best_a], [best_ϵ], marker=:star, markersize=16, color=:cyan, label="")
+
+# calculate exclusion regions
+function calc_exclusion(as, ϵs)
+    regions = zeros(Float64, (length(as), length(ϵs)))
+    Threads.@threads for i in eachindex(as)
+        a = as[i]
+        for (j, ϵ) in enumerate(ϵs)
+            m = JohannsenPsaltisMetric(M = 1.0, a = a, ϵ3 = ϵ)
+            regions[i, j] = if is_naked_singularity(m)
+                NaN
+            else
+                Gradus.isco(m)
+            end
+        end
+    end
+    regions
+end
+
+as = range(0.0, 1.0, 100)
+ϵs = range(-0.5, 3.0, 100)
+
+img = calc_exclusion(as, ϵs)
+
+lim_ϵ = zeros(length(as))
+for (i, a) in enumerate(as)
+    lim_ϵ[i] = 5.0
+    for (j, ϵ) in enumerate(ϵs)
+        if isnan(img[i, j])
+            lim_ϵ[i] = ϵ
+            break
+        end
+    end
+end
+
+plot!(as, lim_ϵ, color=:black, linewidth=4, label="Limit", legend=true)
+plot!([0.5, 1.0], [0, 0], color=:blue, linewidth=2, label="Kerr")
+
+savefig("presentation/jp_disc_a_eps_contours.svg")

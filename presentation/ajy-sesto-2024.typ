@@ -14,7 +14,7 @@
 // Slide 1
 // Title slide
 #title-slide(
-  authors: ("Andrew Young and Fergus Baker"),
+  authors: ("Andrew Young and Fergus Baker \n Jiachen Jiang, Poemwai Chainakun, Wiktoria Tarnopolska, and others"),
   title: "Disc, corona, and spacetime models",
   subtitle: "The flexibility to experiment with more realistic models",
   date: "July 2024",
@@ -145,7 +145,7 @@
     image("powerlaw_fit.svg", width: 60%),
   )
 
-  Want to fit data. Here's are some nice "clean" datasets for MCG-6-30-15. Broad iron K$alpha$ line $~6.4$ keV and Compton hump $~20-30$ keV.
+  Want to fit data. Here's are some nice "clean" datasets for MCG--6-30-15. Broad iron K$alpha$ line $~6.4$ keV and Compton hump $~20-30$ keV.
 ]
 
 // Slide 6
@@ -225,7 +225,7 @@
 // include a contour plot if possible
 // also include fit parameters and error bars
 #slide[
-  == Example thick disc fit
+  == Thick disc fit
 
   #figure(
     image("thick_disc.svg", width: 50%),
@@ -280,23 +280,41 @@
   - `Gradus.jl` allows us to work with any metric and geometry
   - Consider the "deformation" parameters that quantify departures from the Kerr metric (Johannsen 2013; Johannsen & Psaltis 2010)
   - We don't need any analytic calculations -- we just feed in the metric
-  - Can allow arbitrary combinations of deformation parameters not limited to varying one at a time
+  // - Can allow arbitrary combinations of deformation parameters not limited to varying one at a time
+  - Can now investigate deformation parameters without any extra work
+]
+
+#slide[
+  == Johannsen-Psaltis metric, deformation parameter $epsilon$
+
+  #figure(
+    image("jp_disc.svg", height: 85%),
+  )
+]
+
+#slide[
+  == Important caveat -- degeneracy between $a$ and $epsilon$
+
+  #side-by-side(columns: (2fr, 3fr))[
+    // - Significant degeneracy between the spin and deformation parameter
+    - Different $(a, epsilon)$ pairs produce _identical_ line profiles (same ISCO)
+    - We can build on the work of, e.g., Tripathi+19, 21; Abdikamalov+20, Jiang+22 to model thick discs, self-consistently illuminated, in any spacetime
+    // - It is important that the disc illumination be calculated _self-consistently_ with the spacetime geometry
+    // - Timing might be able to break this degeneracy
+  ][
+    #figure(
+      image("jp_disc_a_eps_contours.svg", width: 100%),
+    )
+  ]
 ]
 
 // Slide 13
-#slide[
-  == Results
-
-  - We can build on the work of, e.g., Tripathi et al. (2019, 2021), Abdikamalov et al. (2020), Jiang et al. (2022)
-  - Can have thick disc, self-consistently illuminated, with any spacetime
-  - Will extend to arbitrary corona geometry
-
-  // would be nice to show some confidence contours of two deformation parameters :)
-  // could note that a major constraint here is the isco which is deformation parameter dependent too
-  // note the tarnopolska paper in prep about self-consistent thick discs with deformation parameters
-]
-
-// describe how line profiles change with deformation parameters
+// #slide[
+  // == Future work
+ 
+  // - _XRISM_ narrow absorption and emission lines
+  // - _HEX-P_ will be perfect for broad-band spectroscopy
+// ]
 
 // Slide 14
 // #polylux-slide[
@@ -315,13 +333,14 @@
   == Conclusions
 
   - We are now able to fit data with more realistic disc models
-    - Arbitrary disc geometry
-    - Arbitrary corona geometry
+    - Arbitrary disc geometry (e.g., JED-SAD)
+    - Arbitrary corona geometry (ran out of time before this talk)
     - Arbitrary spacetime geometry
   - Can convolve with realistic disc reflection spectra
     - `reflionx`, `xillver`, or any other model, including high density
   - TODO: timing studies (lags versus frequency, energy)
-  - TODO: radiative transfer -- absorption, scattering, and polarisation
+  - TODO: absorption (_XRISM_), scattering, and polarisation (_IXPE_)
+  // radiative transfer
   - We are *very happy to collaborate* if this could be useful, or you want a comparison with another code; all our software is open source
   // although work in progress so probably easiest to talk to us, but you can raise an issue on GitHub and we'll respond
 ]

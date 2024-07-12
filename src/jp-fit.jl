@@ -19,7 +19,7 @@ function read_transfer_path(path)
         N = 10
         a_range = collect(range(0.0, 0.998, N))
         θ_range = collect(range(20.0, 60.0, N))
-        eps_range = collect(range(-0.998, 0.998, N))
+        eps_range = collect(range(-0.5, 3, N))
         Gradus.CunninghamTransferTable((a_range, θ_range, eps_range), table)
     else
         @error "Not a file"
